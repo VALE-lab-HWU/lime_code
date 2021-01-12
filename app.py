@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from helper import matrix_confusion
@@ -61,9 +62,13 @@ def build_kmeans_model():
     return KMeans(n_clusters=2)
 
 
-def get_model(data):
-    model = build_kmeans_model()
-    model.fit(data)
+def build_random_forest_model():
+    return RandomForestClassifier(max_features=16)
+
+
+def get_model(data, label):
+    model = build_random_forest_model()
+    model.fit(data, label)
     return model
 
 
@@ -82,13 +87,13 @@ def compare_class(predicted, label):
 
 def run_model(train, test, y_train, y_test):
     print('Fit model')
-    model = get_model(train)
+    model = get_model(train, y_train)
     print('Test model')
     prediction = model.predict(test)
     print('prediction')
     compare_class(prediction, y_test)
-    print('training labels')
-    compare_class(model.labels_, y_train)
+    # print('training labels')
+    # compare_class(model.labels_, y_train)
 
 
 def main(path=PATH, filename=FILENAME, random_set=False):
@@ -96,10 +101,10 @@ def main(path=PATH, filename=FILENAME, random_set=False):
         print('Set seed')
         np.random.seed(RANDOM_SEED)
     if filename not in os.listdir(path):
-        print('File not found. Concat data')
-        write_data(path, filename)
+        raise Exception('File not found')
+        # write_data(path, filename)
     print('Read data')
-    data = read_data(path+'/'+filename)
+    data = read_data(path+'/'+filename, True)
     label = extract_label(data).astype(int)
     data = extract_feature(data)
     (x_train, x_test, y_train, y_test) = train_test_split(
@@ -108,4 +113,6 @@ def main(path=PATH, filename=FILENAME, random_set=False):
 
 
 if __name__ == '__main__':
-    main(random_set=True)
+    main(path='../data/20190208',
+         filename='20190208_13_18_07_CR52.pickle',
+         random_set=True)

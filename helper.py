@@ -36,10 +36,10 @@ def print_matrix(m, lb):
 # create and print confusion_matrix
 def matrix_confusion(label, predicted, lb):
     matrix = confusion_matrix(label, predicted)
-    print(matrix)
-    max_diag = max([sum([matrix[(j, (j+i) % len(matrix))]
-                         for j in list(range(len(matrix)))])
-                    for i in range(len(matrix))])
-    print(100 * max_diag / len(label))
-    print(list(max(matrix[:, i]) for i in range(len(matrix))))
+    # max_diag = max([sum([matrix[(j, (j+i) % len(matrix))]
+    #                     for j in list(range(len(matrix)))])
+    #                for i in range(len(matrix))])
+    # print(100 * max_diag / len(label))
+    # print(list(max(matrix[:, i]) for i in range(len(matrix))))
+    print(matrix.diagonal().sum() / len(label))
     print_matrix(matrix, lb)
