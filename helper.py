@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.metrics import confusion_matrix
 
 ####
@@ -43,3 +44,38 @@ def matrix_confusion(label, predicted, lb):
     # print(list(max(matrix[:, i]) for i in range(len(matrix))))
     print(matrix.diagonal().sum() / len(label))
     print_matrix(matrix, lb)
+
+
+####
+# Utility
+####
+def compare_class(predicted, label):
+    unique_p, counts_p = np.unique(predicted, return_counts=True)
+    found = dict(zip(unique_p, counts_p))
+    unique_l, counts_l = np.unique(label, return_counts=True)
+    label_nb = dict(zip(unique_l, counts_l))
+    print('found: ', found)
+    print('label: ', label_nb)
+    matrix_confusion(label, predicted, unique_l)
+    # for j in range(0, len(unique_l)):
+    #     predicted = (predicted + 1) % len(unique_l)
+    #     matrix_confusion(label, predicted, unique_l)
+
+
+####
+# Cross Validation
+####
+def cross_validate(fn, data, label, k=10, **kwargs):
+    datas = np.array(np.array_split(data, k))
+    print(len(datas), [i.shape for i in datas])
+    labels = np.array(np.array_split(label, k))
+    # measure = []
+    for i in range(k):
+        print('fold %d' % i)
+        x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:])))
+        y_train = np.concatenate(np.concatenate((labels[:i],
+                                                     labels[i+1:])))
+        x_test = datas[i]
+        y_test = labels[i]
+        predicted = fn(x_train, y_train, x_test, **kwargs)
+        compare_class(predicted, y_test)

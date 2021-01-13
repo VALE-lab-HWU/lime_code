@@ -5,9 +5,8 @@ import os
 
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
-from helper import matrix_confusion
+from helper import cross_validate
 
 PATH = '../data'
 FILENAME = 'all_patient.pickle'
@@ -55,45 +54,28 @@ def extract_label(data):
 
 
 def extract_feature(data):
-    return lifetime_of_data(data)
+    return intensity_of_data(data)
 
 
-def build_kmeans_model():
-    return KMeans(n_clusters=2)
+def build_kmeans_model(**kwargs):
+    return KMeans(**kwargs)
 
 
-def build_random_forest_model():
-    return RandomForestClassifier(max_features=16)
+def build_random_forest_model(**kwargs):
+    return RandomForestClassifier(**kwargs)
 
 
-def get_model(data, label):
-    model = build_random_forest_model()
-    model.fit(data, label)
+def get_model(x_train, y_train, **kwargs):
+    model = build_random_forest_model(**kwargs)
+    model.fit(x_train, y_train)
     return model
 
 
-def compare_class(predicted, label):
-    unique_p, counts_p = np.unique(predicted, return_counts=True)
-    found = dict(zip(unique_p, counts_p))
-    unique_l, counts_l = np.unique(label, return_counts=True)
-    label_nb = dict(zip(unique_l, counts_l))
-    print('found: ', found)
-    print('label: ', label_nb)
-    matrix_confusion(label, predicted, unique_l)
-    # for j in range(0, len(unique_l)):
-    #     predicted = (predicted + 1) % len(unique_l)
-    #     matrix_confusion(label, predicted, unique_l)
-
-
-def run_model(train, test, y_train, y_test):
+def run_model(x_train, y_train, test, **kwargs):
     print('Fit model')
-    model = get_model(train, y_train)
+    model = get_model(x_train, y_train, **kwargs)
     print('Test model')
-    prediction = model.predict(test)
-    print('prediction')
-    compare_class(prediction, y_test)
-    # print('training labels')
-    # compare_class(model.labels_, y_train)
+    return model.predict(test)
 
 
 def main(path=PATH, filename=FILENAME, random_set=False):
@@ -104,15 +86,14 @@ def main(path=PATH, filename=FILENAME, random_set=False):
         raise Exception('File not found')
         # write_data(path, filename)
     print('Read data')
-    data = read_data(path+'/'+filename, True)
+    data = read_data(path+'/'+filename, False)
+    data = data.sample(frac=1)
     label = extract_label(data).astype(int)
     data = extract_feature(data)
-    (x_train, x_test, y_train, y_test) = train_test_split(
-        data, label, test_size=0.33)
-    run_model(x_train, x_test, y_train, y_test)
+    cross_validate(run_model, data, label, k=10, max_features=16)
 
 
 if __name__ == '__main__':
-    main(path='../data/20190208',
-         filename='20190208_13_18_07_CR52.pickle',
+    main(# path='../data/20190208',
+         # filename='20190208_13_18_07_CR52.pickle',
          random_set=True)
