@@ -56,26 +56,34 @@ def compare_class(predicted, label):
     label_nb = dict(zip(unique_l, counts_l))
     print('found: ', found)
     print('label: ', label_nb)
-    matrix_confusion(label, predicted, unique_l)
+    matrix_confusion(label, predicted, np.union1d(unique_p, unique_l))
     # for j in range(0, len(unique_l)):
     #     predicted = (predicted + 1) % len(unique_l)
     #     matrix_confusion(label, predicted, unique_l)
 
 
+def shuffle_arrays_of_array(*arrays):
+    perm = np.random.permutation(len(arrays[0]))
+    return [array[perm] for array in arrays]
+
+
 ####
 # Cross Validation
 ####
-def cross_validate(fn, data, label, k=10, **kwargs):
-    datas = np.array(np.array_split(data, k))
-    print(len(datas), [i.shape for i in datas])
-    labels = np.array(np.array_split(label, k))
-    # measure = []
-    for i in range(k):
+def run_cross_validation(fn, datas, labels, **kwargs):
+    for i in range(len(datas)):
         print('fold %d' % i)
         x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:])))
         y_train = np.concatenate(np.concatenate((labels[:i],
-                                                     labels[i+1:])))
+                                                 labels[i+1:])))
+        x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
         x_test = datas[i]
         y_test = labels[i]
         predicted = fn(x_train, y_train, x_test, **kwargs)
         compare_class(predicted, y_test)
+
+
+def cross_validate(fn, data, label, k=10, **kwargs):
+    datas = np.array(np.array_split(data, k))
+    labels = np.array(np.array_split(label, k))
+    run_cross_validation(fn, datas, labels, **kwargs)
