@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix
+from sklearn.pipeline import Pipeline
 
 ####
 # MATRIX PRINTING
@@ -87,3 +88,32 @@ def cross_validate(fn, data, label, k=10, **kwargs):
     datas = np.array(np.array_split(data, k))
     labels = np.array(np.array_split(label, k))
     run_cross_validation(fn, datas, labels, **kwargs)
+
+
+####
+# Pipeline
+####
+# from lime tutorial
+class PipeStep(object):
+    """
+    Wrapper for turning functions into pipeline transforms (no-fitting)
+    """
+    def __init__(self, step_func):
+        self._step_func = step_func
+
+    def fit(self, *args):
+        return self
+
+    def transform(self, X):
+        return self._step_func(X)
+
+
+def build_pipeline_color(build_model, gray_imgs, flatten_data, **kwargs):
+    model = build_model(**kwargs)
+    makegray_step = PipeStep(gray_imgs)
+    flatten_step = PipeStep(flatten_data)
+    return Pipeline([
+        ('Make Gray', makegray_step),
+        ('Flatten Image', flatten_step),
+        ('RF', model)
+    ])
