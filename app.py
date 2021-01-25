@@ -170,11 +170,14 @@ def arrays1d_to_color_img(arrays):
     return color_imgs(reshape_imgs(arrays))
 
 
-def build_pipeline(s1, s2, s3):
+def build_pipeline():
+    model = build_random_forest_model(max_features=16)
+    makegray_step = PipeStep(gray_imgs)
+    flatten_step = PipeStep(flatten_imgs)
     return Pipeline([
-        ('Make Gray', s1),
-        ('Flatten Image', s2),
-        ('RF', s3)
+        ('Make Gray', makegray_step),
+        ('Flatten Image', flatten_step),
+        ('RF', model)
     ])
 
 
@@ -183,40 +186,51 @@ def cut_datas(datas, size=1000):
     return [data[r_array] for data in datas]
 
 
-def main_lime(path=PATH, filename=FILENAME):
-    data, label = get_data_complete(path, filename)
-    data, label = cut_datas([data, label])
+def get_color_imgs(data):
     data = scale_img_float(data)
     data = arrays1d_to_color_img(data)
+    return data
 
-    makegray_step = PipeStep(gray_imgs)
-    flatten_step = PipeStep(flatten_imgs)
-    model = build_random_forest_model(max_features=16)
-    pipl = build_pipeline(makegray_step, flatten_step, model)
-    pipl.fit(data, label)
 
+def get_explainer():
     explainer = lime_image.LimeImageExplainer()
     segmenter = SegmentationAlgorithm(
         'quickshift', kernel_size=1, max_dist=200, ratio=0.2)
+    return explainer, segmenter
 
+
+def build_img_explainer(ax, explanation, label, title, **kwargs):
+    temp, mask = explanation.get_image_and_mask(
+        label, num_features=10, hide_rest=False, min_weight=0.01, **kwargs)
+    ax.imshow(label2rgb(mask, temp, bg_label=0, bg_color="white"),
+              interpolation='nearest')
+    ax.set_title('{} {}'.format(title, label))
+
+
+def visualize_explanation(explanation, label):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    build_img_explainer(ax1, explanation, label,
+                        'Positive Regions for',
+                        positive_only=True)
+    build_img_explainer(ax2, explanation, label,
+                        'Positive/Negative Regions for',
+                        positive_only=False)
+
+
+def main_lime(path=PATH, filename=FILENAME):
+    data, label = get_data_complete(path, filename)
+    data, label = cut_datas([data, label])
+    data = get_color_imgs(data)
+
+    pipl = build_pipeline()
+    pipl.fit(data, label)
+
+    explainer, segmenter = get_explainer()
     explanation = explainer.explain_instance(
         data[0], classifier_fn=pipl.predict_proba, segmentation_fn=segmenter,
         num_samples=10000, top_labels=10, hide_color=0)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
-
-    temp, mask = explanation.get_image_and_mask(
-        label[0], positive_only=True, num_features=10, hide_rest=False,
-        min_weight=0.01)
-    ax1.imshow(label2rgb(mask, temp, bg_label=0, bg_color="white"), interpolation='nearest')
-    ax1.set_title('Positive Regions for {}'.format(label[0]))
-
-    temp, mask = explanation.get_image_and_mask(
-        label[0], positive_only=False, num_features=10, hide_rest=False,
-        min_weight=0.01)
-    ax2.imshow(label2rgb(mask, temp, bg_label=0, bg_color="white"), interpolation='nearest')
-    ax2.set_title('Positive/Negative Regions for {}'.format(label[0]))
-
+    visualize_explanation(explanation, label[0])
     plt.show()
 
 
