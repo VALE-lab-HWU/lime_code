@@ -7,54 +7,76 @@ PATH = '../data'
 FILENAME = 'all_patient.pickle'
 
 
-def read_data(filepath=PATH+'/'+FILENAME, dict=False):
+# read the data in the file located at the filepath
+# dic is an option because some pickle file, when loaded, are inside dic
+# return a DataFrame
+def read_data(filepath=PATH+'/'+FILENAME, dic=False):
     data = pd.read_pickle(filepath)
-    if dict:
+    if dic:
         data = [data[i] for i in data][0]
     return data
 
 
-def read_all_data(path=PATH):
+# read all the data in the folder path
+# if the subfolder option is True then the file are assumed to be in subfolder
+# of the same name (starting with the sate, so 20XX)
+# return an array of DataFrame
+def read_all_data(path=PATH, subfolder=True):
     listdir = os.listdir(path)
     listdir.sort()
     res = []
     for folder in listdir:
-        if folder[0] == '2':
-            print(folder)
-            for files in os.listdir(path+'/'+folder):
-                if files[-7:] == '.pickle':
-                    data = read_data(path+'/'+folder+'/'+files, True)
-                    res.append(data)
+        if subfolder:
+            if folder[0] == '2':
+                print(folder)
+                for files in os.listdir(path+'/'+folder):
+                    if files[-7:] == '.pickle':
+                        data = read_data(path+'/'+folder+'/'+files, True)
+                        res.append(data)
+        else:
+            if folder[-7:] == 'pickle':
+                data = read_data(path+'/'+folder, True)
+                res.append(data)
     return res
 
 
-def concat_data(path=PATH):
-    data = read_all_data(path)
+# read all the pickle files and concat them in one DataFrame
+def concat_data(path=PATH, subfolder=True):
+    data = read_all_data(path, subfolder)
     res = pd.concat(data)
     return res
 
 
-def write_data(path=PATH, filename=FILENAME):
-    data = concat_data(path)
+# concat all the different files in the PATH folder, and concat them in
+# the file named filename
+def write_data(path=PATH, filename=FILENAME, subfolder=True):
+    data = concat_data(path, subfolder)
     data.to_pickle(path+'/'+filename)
 
 
+# extract the lifetime from a dataframe
 def lifetime_of_data(data):
     return data[data.columns[16401:]]
 
 
+# extract the intensity from a dataframe
 def intensity_of_data(data):
     return data[data.columns[17:16401]]
 
 
+# extract the label from a dataframe
 def extract_label(data):
     return data['tissue_classification'].to_numpy().astype(int)
 
 
+# extract a feature from a dataframe
+# alias to change easily, only once
 def extract_feature(data):
     return intensity_of_data(data).to_numpy()
 
 
+# extract data from all files
+# return the array of array of feature and label extracted
 def get_data_per_files(path):
     data = read_all_data(path=PATH)
     label = np.array([extract_label(d) for d in data])
@@ -62,6 +84,7 @@ def get_data_per_files(path):
     return data, label
 
 
+# read a file and return the array of label and feature extracted
 def get_data_complete(path=PATH, filename=FILENAME):
     if filename not in os.listdir(path):
         raise Exception('File not found')

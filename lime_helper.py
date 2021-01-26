@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from skimage.color import label2rgb
 
 
+# create the lime explainer and the segmenter use for an explanation
 def get_explainer():
     explainer = lime_image.LimeImageExplainer()
     segmenter = SegmentationAlgorithm(
@@ -13,6 +14,8 @@ def get_explainer():
     return explainer, segmenter
 
 
+# build the images with positive & positive/negative region for an explanation
+# tied to the visualize_explanation function
 def build_img_explainer(ax, explanation, label, title, **kwargs):
     temp, mask = explanation.get_image_and_mask(
         label, num_features=10, hide_rest=False, min_weight=0.01, **kwargs)
@@ -21,6 +24,8 @@ def build_img_explainer(ax, explanation, label, title, **kwargs):
     ax.set_title('{} {}'.format(title, label))
 
 
+# vizualize an explanation
+# take an explanation from lime and the label
 def visualize_explanation(explanation, label):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
     build_img_explainer(ax1, explanation, label,

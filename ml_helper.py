@@ -71,6 +71,9 @@ def shuffle_arrays_of_array(*arrays):
 ####
 # Cross Validation
 ####
+# run a cross valisation, using fn as classifier
+# datas and label are array of data/label
+# each element of data/label will be a fold
 def run_cross_validation(fn, datas, labels, **kwargs):
     for i in range(len(datas)):
         print('fold %d' % i)
@@ -84,6 +87,8 @@ def run_cross_validation(fn, datas, labels, **kwargs):
         compare_class(predicted, y_test)
 
 
+# run a k fold cross validation
+# fn is the classifierm data and label will be split k times
 def cross_validate(fn, data, label, k=10, **kwargs):
     datas = np.array(np.array_split(data, k))
     labels = np.array(np.array_split(label, k))
@@ -108,6 +113,11 @@ class PipeStep(object):
         return self._step_func(X)
 
 
+# Pipeline for classifying color image
+# input: rgb 2d
+# step1: gray 2d
+# step2: gray 1s
+# step3: classifier
 def build_pipeline_color(build_model, gray_imgs, flatten_data, **kwargs):
     model = build_model(**kwargs)
     makegray_step = PipeStep(gray_imgs)
@@ -115,5 +125,5 @@ def build_pipeline_color(build_model, gray_imgs, flatten_data, **kwargs):
     return Pipeline([
         ('Make Gray', makegray_step),
         ('Flatten Image', flatten_step),
-        ('RF', model)
+        ('Classifier', model)
     ])
