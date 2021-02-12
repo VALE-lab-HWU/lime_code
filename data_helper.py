@@ -10,11 +10,18 @@ FILENAME = 'all_patient.pickle'
 # read the data in the file located at the filepath
 # dic is an option because some pickle file, when loaded, are inside dic
 # return a DataFrame
-def read_data(filepath=PATH+'/'+FILENAME, dic=False):
+def read_data_pickle(filepath=PATH+'/'+FILENAME, dic=False):
     data = pd.read_pickle(filepath)
     if dic:
         data = [data[i] for i in data][0]
     return data
+
+
+# read the data in the file located at the filepath
+# dic is an option because some pickle file, when loaded, are inside dic
+# return a DataFrame
+def read_data_csv(filepath=PATH+'/'+FILENAME):
+    return pd.read_csv(filepath)
 
 
 # read all the data in the folder path
@@ -31,11 +38,12 @@ def read_all_data(path=PATH, subfolder=True):
                 print(folder)
                 for files in os.listdir(path+'/'+folder):
                     if files[-7:] == '.pickle':
-                        data = read_data(path+'/'+folder+'/'+files, True)
+                        data = read_data_pickle(path+'/'+folder+'/'+files,
+                                                True)
                         res.append(data)
         else:
-            if folder[-7:] == 'pickle':
-                data = read_data(path+'/'+folder, True)
+            if folder[-7:] == '.pickle':
+                data = read_data_pickle(path+'/'+folder, True)
                 res.append(data)
     return res
 
@@ -75,6 +83,20 @@ def extract_feature(data):
     return intensity_of_data(data).to_numpy()
 
 
+# extract a lifetine and intensity from a dataframe
+def extract_features(data):
+    return (intensity_of_data(data).to_numpy(),
+            lifetime_of_data(data).to_numpy())
+
+
+# extract the label, lifetime and intensity of a files
+def get_datas(path=PATH, filename=FILENAME):
+    data = read_data_pickle(path+'/'+filename, False)
+    intensity, lifetime = extract_features(data)
+    label = extract_label(data)
+    return intensity, lifetime,  label
+
+
 # extract data from all files
 # return the array of array of feature and label extracted
 def get_data_per_files(path):
@@ -90,7 +112,7 @@ def get_data_complete(path=PATH, filename=FILENAME):
         raise Exception('File not found')
         # write_data(path, filename)
     print('Read data')
-    data = read_data(path+'/'+filename, False)
+    data = read_data_pickle(path+'/'+filename, False)
     label = extract_label(data)
     data = extract_feature(data)
     return data, label
