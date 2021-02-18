@@ -63,6 +63,35 @@ def compare_class(predicted, label):
     #     matrix_confusion(label, predicted, unique_l)
 
 
+def get_index_label_tpl(predicted, label, tpl):
+    res = np.nonzero(np.logical_and((predicted == tpl[0]), (label == tpl[1])))
+    return res[0]
+
+
+def get_index_false_positive(predicted, label):
+    return get_index_label_tpl(predicted, label, (1, 0))
+
+
+def get_index_false_negative(predicted, label):
+    return get_index_label_tpl(predicted, label, (0, 1))
+
+
+def get_index_true_negative(predicted, label):
+    return get_index_label_tpl(predicted, label, (0, 0))
+
+
+def get_index_true_positive(predicted, label):
+    return get_index_label_tpl(predicted, label, (1, 1))
+
+
+def get_index_mislabeled(predicted, label):
+    return np.nonzero(predicted != label)[0]
+
+
+def get_index_well_labeled(predicted, label):
+    return np.nonzero(predicted == label)[0]
+
+
 def shuffle_arrays_of_array(*arrays):
     perm = np.random.permutation(len(arrays[0]))
     return [array[perm] for array in arrays]
@@ -75,6 +104,7 @@ def shuffle_arrays_of_array(*arrays):
 # datas and label are array of data/label
 # each element of data/label will be a fold
 def run_cross_validation(fn, datas, labels, **kwargs):
+    res = []
     for i in range(len(datas)):
         print('fold %d' % i)
         x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:])))
@@ -85,6 +115,8 @@ def run_cross_validation(fn, datas, labels, **kwargs):
         y_test = labels[i]
         predicted = fn(x_train, y_train, x_test, **kwargs)
         compare_class(predicted, y_test)
+        res.append((predicted, y_test))
+    return res
 
 
 # run a k fold cross validation
@@ -92,7 +124,7 @@ def run_cross_validation(fn, datas, labels, **kwargs):
 def cross_validate(fn, data, label, k=10, **kwargs):
     datas = np.array(np.array_split(data, k))
     labels = np.array(np.array_split(label, k))
-    run_cross_validation(fn, datas, labels, **kwargs)
+    return run_cross_validation(fn, datas, labels, **kwargs)
 
 
 ####
