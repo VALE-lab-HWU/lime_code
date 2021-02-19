@@ -3,11 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ml_helper import cross_validate, run_cross_validation, \
-    build_pipeline_color
+    build_pipeline_color, get_index_claffication
 from lime_helper import get_explainer, visualize_explanation
 import process_helper as ph
 import data_helper as dh
 import model_helper as mh
+import explain_helper as eh
 
 
 RANDOM_SEED = 42
@@ -20,7 +21,9 @@ def main_per_patient(path=dh.PATH):
 
 def main_cross(path=dh.PATH, filename=dh.FILENAME):
     data, label = dh.get_data_complete(path, filename)
-    cross_validate(mh.run_model, data, label, k=10, max_features=16)
+    res = cross_validate(mh.run_model, data, label, k=10, max_features=16)
+    index_cl = get_index_claffication(*res)
+    eh.save_histogram(data, index_cl, 'graph_explain')
 
 
 def main_lime(path=dh.PATH, filename=dh.FILENAME):
@@ -28,7 +31,8 @@ def main_lime(path=dh.PATH, filename=dh.FILENAME):
     data, label = ph.take_subset_datas([data, label])
     data = ph.get_color_imgs(data)
 
-    pipl = build_pipeline_color(mh.build_random_forest_model, ph.gray_imgs, ph.flatten_data,  max_features=16)
+    pipl = build_pipeline_color(mh.build_random_forest_model, ph.gray_imgs,
+                                ph.flatten_data,  max_features=16)
     pipl.fit(data, label)
 
     explainer, segmenter = get_explainer()

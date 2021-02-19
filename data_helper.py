@@ -3,8 +3,8 @@ import numpy as np
 import os
 
 
-PATH = '../data'
-FILENAME = 'all_patient.pickle'
+PATH = '../data/processed'
+FILENAME = 'cleaned_all_patient.pickle'
 
 
 # read the data in the file located at the filepath

@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
 ####
 # MATRIX PRINTING
@@ -92,6 +93,17 @@ def get_index_well_labeled(predicted, label):
     return np.nonzero(predicted == label)[0]
 
 
+def get_index_claffication(predicted, label):
+    res = {}
+    res['fp'] = get_index_false_positive(predicted, label)
+    res['fn'] = get_index_false_negative(predicted, label)
+    res['tp'] = get_index_true_positive(predicted, label)
+    res['tn'] = get_index_true_negative(predicted, label)
+    res['f'] = get_index_mislabeled(predicted, label)
+    res['t'] = get_index_well_labeled(predicted, label)
+    return res
+
+
 def shuffle_arrays_of_array(*arrays):
     perm = np.random.permutation(len(arrays[0]))
     return [array[perm] for array in arrays]
@@ -125,6 +137,17 @@ def cross_validate(fn, data, label, k=10, **kwargs):
     datas = np.array(np.array_split(data, k))
     labels = np.array(np.array_split(label, k))
     return run_cross_validation(fn, datas, labels, **kwargs)
+
+
+####
+# test and validation
+####
+def run_train_and_test(fn, data, label, percent=70, **kwargs):
+    x_train, x_test, y_train, y_test = train_test_split(
+        data, label, train_size=percent)
+    predicted = fn(x_train, y_train, x_test, **kwargs)
+    compare_class(predicted, y_test)
+    return (predicted, y_test)
 
 
 ####
