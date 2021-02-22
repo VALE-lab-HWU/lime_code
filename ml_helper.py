@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 
@@ -36,9 +36,59 @@ def print_matrix(m, lb):
     print_line_matrix(len(lb))
 
 
+def get_score_predicted(matrix):
+    res = {}
+    res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
+    res['fnr'] = 1 - res['tpr']
+    res['fpr'] = matrix[0][1] / (matrix[1][1] + matrix[0][1])
+    res['tnr'] = 1 - res['fpr']
+    return res
+
+
+def get_score_label(matrix):
+    res = {}
+    res['ppv'] = matrix[0][0] / matrix[:, 0].sum()
+    res['fdr'] = 1 - res['ppv']
+    res['for'] = matrix[1][0] / matrix[0].sum()
+    res['npv'] = 1 - res['for']
+    return res
+
+
+def get_score_total(matrix):
+    res = {}
+    res['acc'] = sum(matrix.diagonal()) / matrix.sum()
+    res['pre'] = matrix[:, 0].sum()
+    return res
+
+
+def get_score_ratio(score):
+    res = {}
+    res['lr+'] = score['tpr'] / score['fpr']
+    res['lr-'] = score['fnr'] / score['tnr']
+    return res
+
+
+def get_score_about_score(score):
+    res = {}
+    res['dor'] = score['lr+'] / score['lr-']
+    res['f_1'] = (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
+    return res
+
+
+def get_all_score(predicted, label):
+    matrix = metrics.confusion_matrix(label, predicted)
+    res = get_score_predicted(matrix)
+    res = {**res, **get_score_label(matrix)}
+    res = {**res, **get_score_total(matrix)}
+    res = {**res, **get_score_ratio(res)}
+    res = {**res, **get_score_about_score(res)}
+    res['auc'] = metrics.roc_auc_score(label, predicted)
+    return res
+
+
 # create and print confusion_matrix
 def matrix_confusion(label, predicted, lb):
-    matrix = confusion_matrix(label, predicted)
+    matrix = metrics.confusion_matrix(label, predicted)
     # max_diag = max([sum([matrix[(j, (j+i) % len(matrix))]
     #                     for j in list(range(len(matrix)))])
     #                for i in range(len(matrix))])
@@ -52,12 +102,8 @@ def matrix_confusion(label, predicted, lb):
 # Utility
 ####
 def compare_class(predicted, label):
-    unique_p, counts_p = np.unique(predicted, return_counts=True)
-    found = dict(zip(unique_p, counts_p))
-    unique_l, counts_l = np.unique(label, return_counts=True)
-    label_nb = dict(zip(unique_l, counts_l))
-    print('found: ', found)
-    print('label: ', label_nb)
+    unique_p = np.unique(predicted)
+    unique_l = np.unique(label)
     matrix_confusion(label, predicted, np.union1d(unique_p, unique_l))
     # for j in range(0, len(unique_l)):
     #     predicted = (predicted + 1) % len(unique_l)
