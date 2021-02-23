@@ -7,33 +7,32 @@ import re
 ####
 # MATRIX PRINTING
 ####
-L = 8
 REX = re.compile('\\033\[\d+m')
 
 
-def print_line_matrix(lng):
+def print_line_matrix(lng, L=8):
     print('-' * ((L+1) * (lng) + 1))
 
 
-def format_row(r):
-    return '|' + '|'.join([format_string(i) for i in r]) + '|'
+def format_row(r, L=8):
+    return '|' + '|'.join([format_string(i, L) for i in r]) + '|'
 
 
-def format_string(ele):
+def format_string(ele, L=8):
     colors = REX.findall(ele)
     value = sorted(REX.split(ele))[-1]
     value = str(value)[:L].center(L)
     return ''.join(colors[:-1])+value+''.join(colors[-1:])
 
 
-def print_matrix(layout):
-    print_line_matrix(len(layout[0]))
+def print_matrix(layout, L=8):
+    print_line_matrix(len(layout[0]), L)
     for i in range(len(layout)):
-        print(format_row(layout[i]))
+        print(format_row(layout[i], L))
         len_l = len(layout[i])
         if i + 1 < len(layout):
             len_l = max(len(layout[i+1]), len_l)
-        print_line_matrix(len_l)
+        print_line_matrix(len_l, L)
 
 
 def get_score_main(matrix):
@@ -119,6 +118,7 @@ def add_color_layout(layout):
     layout[2][2] = bc.LGREEN + str(layout[2][2]) + bc.NC
     layout[1][2] = bc.LRED + str(layout[1][2]) + bc.NC
     layout[2][1] = bc.LRED + str(layout[2][1]) + bc.NC
+    # this should be a function somewhere, to much copy paste
     for i in range(0, min(len(layout), 4)):
         for j in range(len(layout[i])):
             if (layout[i][j] in blue):
@@ -166,7 +166,7 @@ def clean_layout(layout):
 
 
 # label = binary
-def compare_class(predicted, label, verbose=1, color=True):
+def compare_class(predicted, label, verbose=1, color=True, L=8):
     unique_l = np.unique(label)
     matrix = metrics.confusion_matrix(label, predicted)
     layout = [['pr\lb', *unique_l],
@@ -197,7 +197,7 @@ def compare_class(predicted, label, verbose=1, color=True):
     layout = clean_layout(layout)
     if color:
         add_color_layout(layout)
-    print_matrix(layout)
+    print_matrix(layout, L)
 
 
 def get_index_label_tpl(predicted, label, tpl):
