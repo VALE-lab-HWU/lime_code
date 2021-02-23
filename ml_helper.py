@@ -107,14 +107,14 @@ def get_score_verbose_2(predicted, label):
 ####
 # Utility
 ####
-def append_layout_row(ele, score, layout, inv=[]):
+def append_layout_col(ele, score, layout, inv=[]):
     inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
     for i in range(len(ele)):
         layout[i*2+(inv[i] % 2)] += ele[i]
         layout[i*2+((1+inv[i]) % 2)] += [score[j] for j in ele[i]]
 
 
-def append_layout_col(ele, score, layout, inv=[]):
+def append_layout_row(ele, score, layout, inv=[]):
     inv.extend(np.zeros(len(ele[0]) - len(inv), dtype=int))
     to_print = [[k for i in range(len(ele[j]))
                  for k in
@@ -140,30 +140,20 @@ def compare_class(predicted, label, verbose=1):
         layout[2].append(matrix[1].sum())
         if (verbose == 1):
             score = get_score_total(matrix)
-            j = 0
-            for i in score:
-                layout[j].append(i)
-                layout[j+1].append(score[i])
-                j += 2
+            append_layout_col([['acc'], ['pre']], score, layout)
         elif (verbose == 2):
             score = get_score_verbose_2(predicted, label)
-            layout.append(['tpr', score['tpr'], 'auc', score['auc']])
-            layout[0] += ['ppv', 'acc']
-            layout[1] += [score['ppv'], score['acc']]
-            layout[2] += ['f_1', 'pre']
-            layout[3] += [score['f_1'], score['pre']]
+            append_layout_col([['ppv', 'acc'], ['f_1', 'pre']], score, layout)
+            append_layout_row([['tpr', 'auc']], score, layout)
         elif (verbose == 3):
             score = get_all_score(predicted, label)
-            layout.append(['tpr', score['tpr'], score['fpr'], 'fpr',
-                           'f_1', score['f_1']])
-            layout.append(['fnr', score['fnr'], score['tnr'], 'tnr',
-                           'auc', score['auc']])
-            layout.append(['lr+', score['lr+'], score['lr-'], 'lr-',
-                           'dor', score['dor']])
-            layout[0] += ['ppv', 'fdr', 'acc']
-            layout[1] += [score['ppv'], score['fdr'], score['acc']]
-            layout[2] += [score['for'], score['npv'], score['pre']]
-            layout[3] += ['for', 'npv', 'pre']
+            append_layout_col([['ppv', 'fdr', 'acc'],
+                               ['for', 'npv', 'pre']],
+                              score, layout, inv=[0, 1])
+            append_layout_row([['tpr', 'fpr', 'f_1'],
+                               ['fnr', 'tnr', 'auc'],
+                               ['lr+', 'lr-', 'dor']],
+                              score, layout, inv=[0, 1, 0])
     print_matrix(layout)
 
 
