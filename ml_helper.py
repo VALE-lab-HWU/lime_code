@@ -10,30 +10,31 @@ L = 8
 
 
 def print_line_matrix(lng):
-    print('-' * ((L+1) * (lng+2) + 1))
-
-
-def format_string(a):
-    return str(a)[:L].center(L)
+    print('-' * ((L+1) * (lng) + 1))
 
 
 def format_row(r):
-    return '|'.join([format_string(i) for i in r])
+    return '|' + '|'.join([format_string(i) for i in r]) + '|'
 
 
-def print_matrix(m, lb):
-    print_line_matrix(len(lb))
-    print('|' + format_string('lb\pr') + '|' + format_row(lb) + '|'
-          + format_string('total') + '|')
-    print_line_matrix(len(lb))
-    for i in range(len(m)):
-        print('|' + format_string(lb[i]) + '|' + format_row(m[i]) + '|'
-              + format_string(sum(m[i])) + '|')
-        print_line_matrix(len(lb))
-    print('|' + format_string('total') + '|'
-          + format_row(sum(m)) + '|'
-          + format_string(m.sum()) + '|')
-    print_line_matrix(len(lb))
+def format_string(a):
+    if isinstance(a, float):
+        a = round(a, 2)
+    return str(a)[:L].center(L)
+
+
+def print_matrix(layout):
+    print_line_matrix(len(layout[0]))
+    for i in layout:
+        print(format_row(i))
+        print_line_matrix(len(i))
+
+
+def get_score_main(matrix):
+    res = {}
+    res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
+    res['ppv'] = matrix[0][0] / matrix[:, 0].sum()
+    return res
 
 
 def get_score_predicted(matrix):
@@ -57,7 +58,7 @@ def get_score_label(matrix):
 def get_score_total(matrix):
     res = {}
     res['acc'] = sum(matrix.diagonal()) / matrix.sum()
-    res['pre'] = matrix[:, 0].sum()
+    res['pre'] = matrix[:, 0].sum() / matrix.sum()
     return res
 
 
@@ -68,10 +69,15 @@ def get_score_ratio(score):
     return res
 
 
-def get_score_about_score(score):
+def get_score_f1(score):
     res = {}
-    res['dor'] = score['lr+'] / score['lr-']
     res['f_1'] = (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
+    return res
+
+
+def get_score_about_score(score):
+    res = get_score_f1(score)
+    res['dor'] = score['lr+'] / score['lr-']
     return res
 
 
@@ -86,28 +92,58 @@ def get_all_score(predicted, label):
     return res
 
 
-# create and print confusion_matrix
-def matrix_confusion(label, predicted, lb):
+def get_score_verbose_2(predicted, label):
     matrix = metrics.confusion_matrix(label, predicted)
-    # max_diag = max([sum([matrix[(j, (j+i) % len(matrix))]
-    #                     for j in list(range(len(matrix)))])
-    #                for i in range(len(matrix))])
-    # print(100 * max_diag / len(label))
-    # print(list(max(matrix[:, i]) for i in range(len(matrix))))
-    print(matrix.diagonal().sum() / len(label))
-    print_matrix(matrix, lb)
+    res = get_score_main(matrix)
+    res = {**res, **get_score_total(matrix)}
+    res = {**res, **get_score_f1(res)}
+    res['auc'] = metrics.roc_auc_score(label, predicted)
+    return res
 
 
 ####
 # Utility
 ####
-def compare_class(predicted, label):
-    unique_p = np.unique(predicted)
+# label = binary
+def compare_class(predicted, label, verbose=1):
     unique_l = np.unique(label)
-    matrix_confusion(label, predicted, np.union1d(unique_p, unique_l))
-    # for j in range(0, len(unique_l)):
-    #     predicted = (predicted + 1) % len(unique_l)
-    #     matrix_confusion(label, predicted, unique_l)
+    matrix = metrics.confusion_matrix(label, predicted)
+    layout = [['pr\lb', *unique_l],
+              [unique_l[0], *matrix[0]],
+              [unique_l[1], *matrix[1]]]
+    if (verbose > 0):
+        layout.append(['total', matrix[:, 0].sum(),
+                       matrix[:, 1].sum(), matrix.sum()])
+        layout[0].append('total')
+        layout[1].append(matrix[0].sum())
+        layout[2].append(matrix[1].sum())
+        if (verbose == 1):
+            score = get_score_total(matrix)
+            j = 0
+            for i in score:
+                layout[j].append(i)
+                layout[j+1].append(score[i])
+                j += 2
+        elif (verbose == 2):
+            score = get_score_verbose_2(predicted, label)
+            layout.append(['tpr', score['tpr'], 'auc', score['auc']])
+            layout[0] += ['ppv', 'acc']
+            layout[1] += [score['ppv'], score['acc']]
+            layout[2] += ['f_1', 'pre']
+            layout[3] += [score['f_1'], score['pre']]
+        elif (verbose == 3):
+            score = get_all_score(predicted, label)
+            layout.append(['tpr', score['tpr'], score['fpr'], 'fpr',
+                           'f_1', score['f_1']])
+            layout.append(['fnr', score['fnr'], score['tnr'], 'tnr',
+                           'auc', score['auc']])
+            layout.append(['lr+', score['lr+'], score['lr-'], 'lr-',
+                           'dor', score['dor']])
+            layout[0] += ['ppv', 'fdr', 'acc']
+            layout[1] += [score['ppv'], score['fdr'], score['acc']]
+            layout[2] += [score['for'], score['npv'], score['pre']]
+            layout[3] += ['for', 'npv', 'pre']
+    print_matrix(layout)
 
 
 def get_index_label_tpl(predicted, label, tpl):
