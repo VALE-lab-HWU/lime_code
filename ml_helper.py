@@ -17,17 +17,20 @@ def format_row(r):
     return '|' + '|'.join([format_string(i) for i in r]) + '|'
 
 
-def format_string(a):
-    if isinstance(a, float):
-        a = round(a, 2)
-    return str(a)[:L].center(L)
+def format_string(ele):
+    if isinstance(ele, float):
+        ele = round(ele, 2)
+    return str(ele)[:L].center(L)
 
 
 def print_matrix(layout):
     print_line_matrix(len(layout[0]))
-    for i in layout:
-        print(format_row(i))
-        print_line_matrix(len(i))
+    for i in range(len(layout)):
+        print(format_row(layout[i]))
+        len_l = len(layout[i])
+        if i + 1 < len(layout):
+            len_l = max(len(layout[i+1]), len_l)
+        print_line_matrix(len_l)
 
 
 def get_score_main(matrix):
@@ -104,6 +107,24 @@ def get_score_verbose_2(predicted, label):
 ####
 # Utility
 ####
+def append_layout_row(ele, score, layout, inv=[]):
+    inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
+    for i in range(len(ele)):
+        layout[i*2+(inv[i] % 2)] += ele[i]
+        layout[i*2+((1+inv[i]) % 2)] += [score[j] for j in ele[i]]
+
+
+def append_layout_col(ele, score, layout, inv=[]):
+    inv.extend(np.zeros(len(ele[0]) - len(inv), dtype=int))
+    to_print = [[k for i in range(len(ele[j]))
+                 for k in
+                 ([ele[j][i], score[ele[j][i]]]
+                 if inv[i] == 0 else
+                 [score[ele[j][i]], ele[j][i]])]
+                for j in range(len(ele))]
+    layout.extend(to_print)
+
+
 # label = binary
 def compare_class(predicted, label, verbose=1):
     unique_l = np.unique(label)
@@ -208,7 +229,6 @@ def run_cross_validation(fn, datas, labels, **kwargs):
         x_test = datas[i]
         y_test = labels[i]
         predicted = fn(x_train, y_train, x_test, **kwargs)
-        compare_class(predicted, y_test)
         res.append((predicted, y_test))
     return res
 
@@ -224,12 +244,11 @@ def cross_validate(fn, data, label, k=10, **kwargs):
 ####
 # test and validation
 ####
-def run_train_and_test(fn, data, label, percent=70, **kwargs):
+def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
     x_train, x_test, y_train, y_test = train_test_split(
         data, label, train_size=percent)
     predicted = fn(x_train, y_train, x_test, **kwargs)
-    compare_class(predicted, y_test)
-    return (predicted, y_test)
+    return (x_test, predicted, y_test)
 
 
 ####
