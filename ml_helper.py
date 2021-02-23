@@ -1,12 +1,14 @@
 import numpy as np
+from bcolors import Bcolors as bc
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
-
+import re
 ####
 # MATRIX PRINTING
 ####
 L = 8
+REX = re.compile('\\033\[\d+m')
 
 
 def print_line_matrix(lng):
@@ -18,9 +20,10 @@ def format_row(r):
 
 
 def format_string(ele):
-    if isinstance(ele, float):
-        ele = round(ele, 2)
-    return str(ele)[:L].center(L)
+    colors = REX.findall(ele)
+    value = sorted(REX.split(ele))[-1]
+    value = str(value)[:L].center(L)
+    return ''.join(colors[:-1])+value+''.join(colors[-1:])
 
 
 def print_matrix(layout):
@@ -107,6 +110,37 @@ def get_score_verbose_2(predicted, label):
 ####
 # Utility
 ####
+blue = ['ppv', 'tpr', 'auc', 'f_1', 'acc']
+yellow = ['tnr', 'npv', 'lr+']
+
+
+def add_color_layout(layout):
+    layout[1][1] = bc.LGREEN + str(layout[1][1]) + bc.NC
+    layout[2][2] = bc.LGREEN + str(layout[2][2]) + bc.NC
+    layout[1][2] = bc.LRED + str(layout[1][2]) + bc.NC
+    layout[2][1] = bc.LRED + str(layout[2][1]) + bc.NC
+    for i in range(0, min(len(layout), 4)):
+        for j in range(len(layout[i])):
+            if (layout[i][j] in blue):
+                layout[i][j] = bc.CYAN + layout[i][j] + bc.NC
+                ii = i+1 if i % 2 == 0 else i-1
+                layout[ii][j] = bc.LCYAN + layout[ii][j] + bc.NC
+            elif (layout[i][j] in yellow):
+                layout[i][j] = bc.YELLOW + layout[i][j] + bc.NC
+                ii = i+1 if i % 2 == 0 else i-1
+                layout[ii][j] = bc.LYELLOW + layout[ii][j] + bc.NC
+    for i in range(4, len(layout)):
+        for j in range(len(layout[i])):
+            if (layout[i][j] in blue):
+                layout[i][j] = bc.CYAN + layout[i][j] + bc.NC
+                jj = j+1 if j % 2 == 0 else j-1
+                layout[i][jj] = bc.LCYAN + layout[i][jj] + bc.NC
+            elif (layout[i][j] in yellow):
+                layout[i][j] = bc.YELLOW + layout[i][j] + bc.NC
+                jj = j+1 if j % 2 == 0 else j-1
+                layout[i][jj] = bc.LYELLOW + layout[i][jj] + bc.NC
+
+
 def append_layout_col(ele, score, layout, inv=[]):
     inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
     for i in range(len(ele)):
@@ -125,8 +159,14 @@ def append_layout_row(ele, score, layout, inv=[]):
     layout.extend(to_print)
 
 
+def clean_layout(layout):
+    layout = [[str(round(i, 2)) if isinstance(i, float) else str(i) for i in j]
+              for j in layout]
+    return layout
+
+
 # label = binary
-def compare_class(predicted, label, verbose=1):
+def compare_class(predicted, label, verbose=1, color=True):
     unique_l = np.unique(label)
     matrix = metrics.confusion_matrix(label, predicted)
     layout = [['pr\lb', *unique_l],
@@ -154,6 +194,9 @@ def compare_class(predicted, label, verbose=1):
                                ['fnr', 'tnr', 'auc'],
                                ['lr+', 'lr-', 'dor']],
                               score, layout, inv=[0, 1, 0])
+    layout = clean_layout(layout)
+    if color:
+        add_color_layout(layout)
     print_matrix(layout)
 
 

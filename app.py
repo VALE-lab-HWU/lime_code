@@ -33,9 +33,9 @@ def main_one_run(path=dh.PATH, filename=dh.FILENAME):
     data, label = dh.get_data_complete(path, filename)
     data_test, *res = mlh.run_train_and_test(
         mh.run_model, data, label, max_features=16)
-    mlh.compare_class(*res, verbose=3)
-    index_cl = mlh.get_index_claffication(*res)
-    eh.save_all_histogram_all_data(data_test, index_cl, 'graph_explain')
+    mlh.compare_class(*res, verbose=3, color=True)
+    #index_cl = mlh.get_index_claffication(*res)
+    #eh.save_all_histogram_all_data(data_test, index_cl, 'graph_explain')
 
 
 def main_lime(path=dh.PATH, filename=dh.FILENAME):
