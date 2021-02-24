@@ -10,15 +10,20 @@ import re
 REX = re.compile('\\033\[\d+m')
 
 
+# utility function to print a line of a certain length per cell
+# lng will be the number of 'cell'
+# L will be the width of a cell
 def print_line_matrix(lng, L=8):
     print('-' * ((L+1) * (lng) + 1))
 
 
-def format_row(r, L=8):
-    return '|' + '|'.join([format_string(i, L) for i in r]) + '|'
-
-
+# format a string so it fits in a cell
+# cutted to L characters (L-1 +'\' actually)
+# Numbers have thousands separator if possible
+# string are centered.
+# It's possible to right aligne numbers but I don't like it
 def format_string(ele, L=8):
+    ele = str(ele)
     colors = REX.findall(ele)
     value = sorted(REX.split(ele))[-1]
     if value.replace('.', '').isdigit():
@@ -29,12 +34,22 @@ def format_string(ele, L=8):
         tmp = '{:,}'.format(f_value).replace(',', ' ')
         if len(tmp) < L:
             value = tmp
-    else:
-        value = value[:L]
-    value = value.center(L)
+    if len(value) > L:
+        value = value[:L-1]+'\\'
+    value = value[:L].center(L)
     return ''.join(colors[:-1])+value+''.join(colors[-1:])
 
 
+# function to format the row of a matrix
+# r are the different cell
+# L is the width for a cell
+def format_row(r, L=8):
+    return '|' + '|'.join([format_string(i, L) for i in r]) + '|'
+
+
+# print a 2d array based on a layout
+# each cell will have L characters
+# can have color code
 def print_matrix(layout, L=8):
     print_line_matrix(len(layout[0]), L)
     for i in range(len(layout)):
@@ -45,6 +60,9 @@ def print_matrix(layout, L=8):
         print_line_matrix(len_l, L)
 
 
+# get multiple values out of a confusion matrix
+# recall (tpr)
+# precition (ppv)
 def get_score_main(matrix):
     res = {}
     res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
@@ -52,6 +70,11 @@ def get_score_main(matrix):
     return res
 
 
+# get multiple values out of a confusion matrix
+# recall (tpr)
+# fall-out  (fpr)
+# miss rate (fnr)
+# specificity (tnr)
 def get_score_predicted(matrix):
     res = {}
     res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
@@ -61,6 +84,11 @@ def get_score_predicted(matrix):
     return res
 
 
+# get multiple values out of a confusion matrix
+# precision (ppv)
+# false discovery rate  (fdr)
+# false omission rate (for)
+# negative predictive value (npv)
 def get_score_label(matrix):
     res = {}
     res['ppv'] = matrix[0][0] / matrix[:, 0].sum()
@@ -70,6 +98,9 @@ def get_score_label(matrix):
     return res
 
 
+# get multiple values out of a confusion matrix
+# accuracy (acc)
+# prevalence (pre)
 def get_score_total(matrix):
     res = {}
     res['acc'] = sum(matrix.diagonal()) / matrix.sum()
@@ -77,6 +108,9 @@ def get_score_total(matrix):
     return res
 
 
+# get multiple values out of scores of a classification
+# positive likelihood ratio (lr+)
+# negative likelihood ratio (lr-)
 def get_score_ratio(score):
     res = {}
     res['lr+'] = score['tpr'] / score['fpr']
@@ -84,18 +118,38 @@ def get_score_ratio(score):
     return res
 
 
+# get the f1 value  out of scores of a classification
 def get_score_f1(score):
     res = {}
     res['f_1'] = (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
     return res
 
 
+# get multiple values out of scores of a classification
+# f1 score (f_1)
+# diagnostic odds ratio (dor)
 def get_score_about_score(score):
     res = get_score_f1(score)
     res['dor'] = score['lr+'] / score['lr-']
     return res
 
 
+# get all values out of a confusion matrix
+# recall (tpr)
+# fall-out  (fpr)
+# miss rate (fnr)
+# specificity (tnr)
+# precision (ppv)
+# false discovery rate  (fdr)
+# false omission rate (for)
+# negative predictive value (npv)
+# accuracy (acc)
+# prevalence (pre)
+# positive likelihood ratio (lr+)
+# negative likelihood ratio (lr-)
+# f1 score (f_1)
+# diagnostic odds ratio (dor)
+# area under the roc curve (auc)
 def get_all_score(predicted, label):
     matrix = metrics.confusion_matrix(label, predicted)
     res = get_score_predicted(matrix)
@@ -107,6 +161,13 @@ def get_all_score(predicted, label):
     return res
 
 
+# get multiple values out of a confusion matrix
+# recall (tpr)
+# precision (ppv)
+# accuracy (acc)
+# prevalence (pre)
+# f1 score (f_1)
+# area under the roc curve (auc)
 def get_score_verbose_2(predicted, label):
     matrix = metrics.confusion_matrix(label, predicted)
     res = get_score_main(matrix)
@@ -123,6 +184,9 @@ blue = ['ppv', 'tpr', 'auc', 'f_1', 'acc']
 yellow = ['tnr', 'npv', 'lr+']
 
 
+# add color to a layout for pretty printing
+# color the true in green and false in red
+# color the value in the array above (blue, yellow) in blue or yellow
 def add_color_layout(layout):
     layout[1][1] = bc.LGREEN + str(layout[1][1]) + bc.NC
     layout[2][2] = bc.LGREEN + str(layout[2][2]) + bc.NC
@@ -151,6 +215,19 @@ def add_color_layout(layout):
                 layout[i][jj] = bc.LYELLOW + layout[i][jj] + bc.NC
 
 
+# append a series of value to the end of the first lines of a 2d list
+# ele: the 2d list of keys to add
+# score: the dict to take the value from using the key
+# layout: 2d list to append the value to
+# inv: 1d array to specify the order (key, value) or (value, key), for each row
+# ele: [['acc','auc'],['pre']]
+# layout: [[a,b,c],[e,f,g],[h,i,j],[k,l,m]]
+# inv: [0,1]
+#
+# layout = [[a,b,c,'acc','auc'],
+#           [e,f,g,score['acc'],score['auc']],
+#           [h,i,j,score['pre']],
+#           [k,l,m,'pre']]
 def append_layout_col(ele, score, layout, inv=[]):
     inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
     for i in range(len(ele)):
@@ -158,6 +235,19 @@ def append_layout_col(ele, score, layout, inv=[]):
         layout[i*2+((1+inv[i]) % 2)] += [score[j] for j in ele[i]]
 
 
+# append a series of value to the end of a 2d list
+# ele: the 2d list of keys to add
+# score: the dict to take the value from using the key
+# layout: 2d list to append the value to
+# inv: 1d array to specify the order (key, value) or (value, key), for each col
+# ele: [['acc','auc'],['pre']]
+# layout: [[a,b,c],[e,f,g]]
+# inv: [0,1]
+#
+# layout = [[a,b,c],
+#           [e,f,g],
+#           ['acc', score['acc'], score['pre'], 'pre'],
+#           [score['auc'],'auc']]
 def append_layout_row(ele, score, layout, inv=[]):
     inv.extend(np.zeros(len(ele[0]) - len(inv), dtype=int))
     to_print = [[k for i in range(len(ele[j]))
@@ -169,13 +259,20 @@ def append_layout_row(ele, score, layout, inv=[]):
     layout.extend(to_print)
 
 
+# clean a 2d array to make it ready for formatting
+# round float and convert all element to string
 def clean_layout(layout):
     layout = [[str(round(i, 2)) if isinstance(i, float) else str(i) for i in j]
               for j in layout]
     return layout
 
 
-# label = binary
+# print a comparison of the result of a classification
+# label vs predicted
+# it will print a confusion matrix
+# verbose: how much measure are to be displayed (0,1,2,3)
+# color: put color in
+# L: cell width
 def compare_class(predicted, label, verbose=1, color=True, L=8):
     unique_l = np.unique(label)
     matrix = metrics.confusion_matrix(label, predicted)
@@ -210,35 +307,49 @@ def compare_class(predicted, label, verbose=1, color=True, L=8):
     print_matrix(layout, L)
 
 
+# get all index where the label and the predicted value are equals to a tuple
 def get_index_label_tpl(predicted, label, tpl):
     res = np.nonzero(np.logical_and((predicted == tpl[0]), (label == tpl[1])))
     return res[0]
 
 
+# get the index of all false positive
 def get_index_false_positive(predicted, label):
     return get_index_label_tpl(predicted, label, (1, 0))
 
 
+# get the index of all false negative
 def get_index_false_negative(predicted, label):
     return get_index_label_tpl(predicted, label, (0, 1))
 
 
+# get the index of all true negative
 def get_index_true_negative(predicted, label):
     return get_index_label_tpl(predicted, label, (0, 0))
 
 
+# get the index of all true positive
 def get_index_true_positive(predicted, label):
     return get_index_label_tpl(predicted, label, (1, 1))
 
 
+# get the index where predicted is different from label
 def get_index_mislabeled(predicted, label):
     return np.nonzero(predicted != label)[0]
 
 
+# get the index where predicted is equal to label
 def get_index_well_labeled(predicted, label):
     return np.nonzero(predicted == label)[0]
 
 
+# return a dictionnary with all indexes of the different classification
+# false positive (fp)
+# false negative (fn)
+# true positive (tp)
+# true negative (tn)
+# mislabeled (f)
+# well labeled (t)
 def get_index_claffication(predicted, label):
     res = {}
     res['fp'] = get_index_false_positive(predicted, label)
@@ -250,6 +361,7 @@ def get_index_claffication(predicted, label):
     return res
 
 
+# shuffle multiple arrays in the same order
 def shuffle_arrays_of_array(*arrays):
     perm = np.random.permutation(len(arrays[0]))
     return [array[perm] for array in arrays]
@@ -287,6 +399,8 @@ def cross_validate(fn, data, label, k=10, **kwargs):
 ####
 # test and validation
 ####
+# run a simple train and test classification
+# split the dataset according to percent (percent for train 1-percent for test)
 def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
     x_train, x_test, y_train, y_test = train_test_split(
         data, label, train_size=percent)
