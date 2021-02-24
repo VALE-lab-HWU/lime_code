@@ -21,7 +21,17 @@ def format_row(r, L=8):
 def format_string(ele, L=8):
     colors = REX.findall(ele)
     value = sorted(REX.split(ele))[-1]
-    value = str(value)[:L].center(L)
+    if value.replace('.', '').isdigit():
+        if value.isdigit():
+            f_value = int(value)
+        else:
+            f_value = float(value)
+        tmp = '{:,}'.format(f_value).replace(',', ' ')
+        if len(tmp) < L:
+            value = tmp
+    else:
+        value = value[:L]
+    value = value.center(L)
     return ''.join(colors[:-1])+value+''.join(colors[-1:])
 
 
