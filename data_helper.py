@@ -5,6 +5,7 @@ import os
 
 PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
+FILENAME_SMALL = 'cleaned_3000_patient.pickle'
 
 
 # read the data in the file located at the filepath
@@ -66,7 +67,7 @@ def write_data(path=PATH, filename=FILENAME, subfolder=True):
 
 # extract the lifetime from a dataframe
 def lifetime_of_data(data):
-    return data[data.columns[16401:]]
+    return data[data.columns[16401:32785]]
 
 
 # extract the intensity from a dataframe
@@ -114,7 +115,7 @@ def get_data_per_files(path):
 
 
 # read a file and return the array of label and feature extracted
-def get_data_complete(path=PATH, filename=FILENAME):
+def get_data_complete(path=PATH, filename=FILENAME, all_feature=False):
     if filename not in os.listdir(path):
         raise Exception('File not found')
         # write_data(path, filename)
@@ -122,7 +123,10 @@ def get_data_complete(path=PATH, filename=FILENAME):
     data = read_data_pickle(path+'/'+filename, False)
     label = extract_label(data)
     patient = extract_patient(data)
-    data = extract_feature(data)
+    if all_feature:
+        data = extract_features(data)
+    else:
+        data = extract_feature(data)
     return data, label, patient
 
 
