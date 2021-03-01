@@ -6,6 +6,7 @@ import os
 PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
 FILENAME_SMALL = 'cleaned_3000_patient.pickle'
+FILENAME_MEDIUM = 'cleaned_10000_patient.pickle'
 
 
 # read the data in the file located at the filepath

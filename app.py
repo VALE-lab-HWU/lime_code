@@ -2,7 +2,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from lime_helper import get_explainer, visualize_explanation
+import lime_helper as lh
 import process_helper as ph
 import data_helper as dh
 import model_helper as mh
@@ -55,21 +55,36 @@ def main_one_run(path=dh.PATH, filename=dh.FILENAME):
     eh.save_all_histogram_all_data(data_test, data_cl, 'graph_explain')
 
 
-def main_lime(path=dh.PATH, filename=dh.FILENAME):
-    data, label = dh.get_data_complete(path, filename)
-    data, label = ph.take_subset_datas([data, label])
-    data = ph.get_color_imgs(data)
-
-    pipl = mlh.build_pipeline_color(mh.build_random_forest_model, ph.gray_imgs,
-                                    ph.flatten_data,  max_features=16)
-    pipl.fit(data, label)
-
-    explainer, segmenter = get_explainer()
-    explanation = explainer.explain_instance(
-        data[0], classifier_fn=pipl.predict_proba, segmentation_fn=segmenter,
-        num_samples=10000, top_labels=10, hide_color=0)
-
-    visualize_explanation(explanation, label[0])
+def main_lime_advanced(p_train=range(0, 16), p_test=range(16, 20), index=True,
+                       path=dh.PATH, filename=dh.FILENAME):
+    data, label, patient = dh.get_data_complete(path, filename, False)
+    if index:
+        p_idx = dh.get_patient_dict(patient)
+        p_train = [p_idx[i] for i in p_train]
+        p_test = [p_idx[i] for i in p_test]
+    pip_color = mlh.build_pipeline_to_color()
+    pip_process = mlh.build_pipeline_classify(
+        mh.build_random_forest_model,
+        model_kwargs={'n_jobs': 10, 'n_estimators': 100, 'max_features': 32})
+    data = pip_color.transform(data)
+    x_train, x_test, y_train, y_test = mlh.get_train_and_test(
+        p_train, p_test, data, label, patient)
+    pip_process.fit(x_train, y_train)
+    predicted = pip_process.predict(x_test)
+    mlh.compare_class(predicted, y_test, verbose=3, color=True)
+    index_cl = mlh.get_index_claffication(predicted, y_test)
+    data_cl = eh.get_data_per_classification(data, index_cl)
+    eh.save_all_histogram_all_data(x_test, data_cl, 'graph_explain')
+    explainer, segmenter = lh.get_explainer()
+    for i in data_cl:
+        explanation = explainer.explain_instance(
+            data_cl[i][0], classifier_fn=pip_process.predict_proba,
+            segmentation_fn=segmenter, num_samples=10000, top_labels=2,
+            hide_color=0)
+        if i[0] == 't':
+            lh.visualize_explanation(explanation, 1)
+        else:
+            lh.visualize_explanation(explanation, 0)
     plt.show()
 
 
