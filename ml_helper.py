@@ -409,6 +409,19 @@ def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
     return (x_test, predicted, y_test)
 
 
+def get_data_label_from_patient(p_index, patient,  data, label):
+    index = np.isin(patient, p_index)
+    return data[index], label[index]
+
+
+#
+def get_train_and_test(p_train, p_test, data, label, patient):
+    x_train, y_train = get_data_label_from_patient(
+        p_train, patient, data, label)
+    x_test, y_test = get_data_label_from_patient(p_test, patient, data, label)
+    return x_train, x_test, y_train, y_test
+
+
 # run a simple train and test classification
 # split the dataset according by patient.
 # a list of patient is given for the training and testing
@@ -416,12 +429,11 @@ def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
 # see the main_one_run_patient_split function in app
 def run_train_and_test_patient(
         fn, data, label, patient, p_train, p_test, **kwargs):
-    train_index = np.isin(patient, p_train)
-    test_index = np.isin(patient, p_test)
-    x_train, y_train = data[train_index], label[train_index]
-    x_test, y_test = data[test_index], label[test_index]
+    x_train, x_test, y_train, y_test = get_train_and_test(
+        p_train, p_test, data, label, patient)
     predicted = fn(x_train, y_train, x_test, **kwargs)
     return (x_test, predicted, y_test)
+
 
 
 ####
