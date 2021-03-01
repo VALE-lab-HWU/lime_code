@@ -3,6 +3,9 @@ from bcolors import Bcolors as bc
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import process_helper as ph
 import re
 ####
 # MATRIX PRINTING
@@ -435,7 +438,6 @@ def run_train_and_test_patient(
     return (x_test, predicted, y_test)
 
 
-
 ####
 # Pipeline
 ####
@@ -444,8 +446,9 @@ class PipeStep(object):
     """
     Wrapper for turning functions into pipeline transforms (no-fitting)
     """
-    def __init__(self, step_func):
+    def __init__(self, step_func, inverse_step=lambda x: x):
         self._step_func = step_func
+        self._inverse_step = inverse_step
 
     def fit(self, *args):
         return self
@@ -453,18 +456,64 @@ class PipeStep(object):
     def transform(self, X):
         return self._step_func(X)
 
+    def inverse_transform(self, X):
+        return self._inverse_step(X)
 
-# Pipeline for classifying color image
+
+# Pipeline for converting color image to gray
 # input: rgb 2d
 # step1: gray 2d
 # step2: gray 1s
-# step3: classifier
-def build_pipeline_color(build_model, gray_imgs, flatten_data, **kwargs):
-    model = build_model(**kwargs)
-    makegray_step = PipeStep(gray_imgs)
-    flatten_step = PipeStep(flatten_data)
+def build_pipeline_to_gray():
+    makegray_step = PipeStep(ph.gray_imgs)  # , ph.color_imgs)
+    flatten_step = PipeStep(ph.flatten_data)  # , ph.reshape_imgs)
     return Pipeline([
         ('Make Gray', makegray_step),
         ('Flatten Image', flatten_step),
-        ('Classifier', model)
+    ])
+
+
+# Pipeline for converting image to color
+# input: 1d float array
+# step1: put in float from 0 to 1
+# step2: reshape
+# step3: color
+def build_pipeline_to_color():
+    scale_float_step = PipeStep(ph.scale_img_float)
+    reshape_step = PipeStep(ph.reshape_imgs)
+    color_step = PipeStep(ph.color_imgs)
+    return Pipeline([
+        ('Scale to float 0-1', scale_float_step),
+        ('Shape 2d image', reshape_step),
+        ('Color Img', color_step)
+    ])
+
+
+# pipeline to process images
+# step1: scale
+# step2: PCA
+# step3: scale again
+def build_pipeline_pca_scale(
+        s1_kwargs={},
+        pca_kwargs={'n_components': 0.95, 'svd_solver': 'full'},
+        s2_kwargs={}):
+    return Pipeline([
+        ('Scale data ', StandardScaler(**s1_kwargs)),
+        ('PCA', PCA(**pca_kwargs)),
+        ('Scale PCA', StandardScaler(**s2_kwargs))
+    ])
+
+
+# pipeline to classify and use lime
+# step1: 2d color to 1d gray image
+# step2: scale and pca image
+# step3: fit
+def build_pipeline_classify(model, model_kwargs={}, pipeline_kwargs={}):
+    step1 = build_pipeline_to_gray()
+    step2 = build_pipeline_pca_scale(**pipeline_kwargs)
+    step3 = model(**model_kwargs)
+    return Pipeline([
+        ('Gray Img ', step1),
+        ('Process PCA', step2),
+        ('Fit Img', step3)
     ])
