@@ -20,8 +20,24 @@ def main_per_patient(path=dh.PATH):
         mlh.compare_class(i, j)
 
 
+def main_one_run_patient_split(
+        p_train=range(0, 16), p_test=range(16, 20), index=True,
+        path=dh.PATH, filename=dh.FILENAME):
+    data, label, patient = dh.get_data_complete(path, filename)
+    if index:
+        p_idx = dh.get_patient_dict(patient)
+        p_train = [p_idx[i] for i in p_train]
+        p_test = [p_idx[i] for i in p_test]
+    x_test, *res = mlh.run_train_and_test_patient(
+        mh.run_model, data, label, patient, p_train, p_test)
+    mlh.compare_class(*res, verbose=3, color=True)
+    index_cl = mlh.get_index_claffication(*res)
+    data_cl = eh.get_data_per_classification(data, index_cl)
+    eh.save_all_histogram_all_data(x_test, data_cl, 'graph_explain')
+
+
 def main_cross(path=dh.PATH, filename=dh.FILENAME):
-    data, label = dh.get_data_complete(path, filename)
+    data, label, patient = dh.get_data_complete(path, filename)
     res = mlh.cross_validate(mh.run_model, data, label, k=10, max_features=16)
     for i, j in res:
         mlh.compare_class(i, j)
@@ -30,12 +46,13 @@ def main_cross(path=dh.PATH, filename=dh.FILENAME):
 
 
 def main_one_run(path=dh.PATH, filename=dh.FILENAME):
-    data, label = dh.get_data_complete(path, filename)
+    data, label, patient = dh.get_data_complete(path, filename)
     data_test, *res = mlh.run_train_and_test(
         mh.run_model, data, label, max_features=16)
     mlh.compare_class(*res, verbose=3, color=True)
-    #index_cl = mlh.get_index_claffication(*res)
-    #eh.save_all_histogram_all_data(data_test, index_cl, 'graph_explain')
+    index_cl = mlh.get_index_claffication(*res)
+    data_cl = eh.get_data_per_classification(data, index_cl)
+    eh.save_all_histogram_all_data(data_test, data_cl, 'graph_explain')
 
 
 def main_lime(path=dh.PATH, filename=dh.FILENAME):
@@ -63,5 +80,6 @@ if __name__ == '__main__':
     # filename='20190208_13_18_07_CR52.pickle',
     #     random_set=True)
     #main_per_patient()
-    main_one_run()
+    #main_one_run()
     #main_lime()
+    main_one_run_patient_split()

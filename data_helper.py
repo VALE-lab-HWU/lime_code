@@ -40,10 +40,12 @@ def read_all_data(path=PATH, subfolder=True):
                     if files[-7:] == '.pickle':
                         data = read_data_pickle(path+'/'+folder+'/'+files,
                                                 True)
+                        data['patient'] = files[:8]
                         res.append(data)
         else:
             if folder[-7:] == '.pickle':
                 data = read_data_pickle(path+'/'+folder, True)
+                data['patient'] = folder[:8]
                 res.append(data)
     return res
 
@@ -75,6 +77,11 @@ def intensity_of_data(data):
 # extract the label from a dataframe
 def extract_label(data):
     return data['tissue_classification'].to_numpy().astype(int)
+
+
+# extract the patient from a dataframe
+def extract_patient(data):
+    return data['patient'].to_numpy()
 
 
 # extract a feature from a dataframe
@@ -114,5 +121,11 @@ def get_data_complete(path=PATH, filename=FILENAME):
     print('Read data')
     data = read_data_pickle(path+'/'+filename, False)
     label = extract_label(data)
+    patient = extract_patient(data)
     data = extract_feature(data)
-    return data, label
+    return data, label, patient
+
+
+def get_patient_dict(patient):
+    p = np.unique(patient)
+    return {i: p[i] for i in range(len(p))}

@@ -228,7 +228,7 @@ def add_color_layout(layout):
 #           [e,f,g,score['acc'],score['auc']],
 #           [h,i,j,score['pre']],
 #           [k,l,m,'pre']]
-def append_layout_col(ele, score, layout, inv=[]):
+def append_layout_col(ele, score, layout, inv=list()):
     inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
     for i in range(len(ele)):
         layout[i*2+(inv[i] % 2)] += ele[i]
@@ -248,7 +248,7 @@ def append_layout_col(ele, score, layout, inv=[]):
 #           [e,f,g],
 #           ['acc', score['acc'], score['pre'], 'pre'],
 #           [score['auc'],'auc']]
-def append_layout_row(ele, score, layout, inv=[]):
+def append_layout_row(ele, score, layout, inv=list()):
     inv.extend(np.zeros(len(ele[0]) - len(inv), dtype=int))
     to_print = [[k for i in range(len(ele[j]))
                  for k in
@@ -404,6 +404,21 @@ def cross_validate(fn, data, label, k=10, **kwargs):
 def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
     x_train, x_test, y_train, y_test = train_test_split(
         data, label, train_size=percent)
+    predicted = fn(x_train, y_train, x_test, **kwargs)
+    return (x_test, predicted, y_test)
+
+
+# run a simple train and test classification
+# split the dataset according by patient.
+# a list of patient is given for the training and testing
+# the list can be created easily using utility from data_helper
+# see the main_one_run_patient_split function in app
+def run_train_and_test_patient(
+        fn, data, label, patient, p_train, p_test, **kwargs):
+    train_index = np.isin(patient, p_train)
+    test_index = np.isin(patient, p_test)
+    x_train, y_train = data[train_index], label[train_index]
+    x_test, y_test = data[test_index], label[test_index]
     predicted = fn(x_train, y_train, x_test, **kwargs)
     return (x_test, predicted, y_test)
 
