@@ -262,7 +262,7 @@ def append_layout_row(ele, score, layout, inv=list()):
 # clean a 2d array to make it ready for formatting
 # round float and convert all element to string
 def clean_layout(layout):
-    layout = [[str(round(i, 2)) if isinstance(i, float) else str(i) for i in j]
+    layout = [[str(round(i, 3)) if isinstance(i, float) else str(i) for i in j]
               for j in layout]
     return layout
 
@@ -274,8 +274,9 @@ def clean_layout(layout):
 # color: put color in
 # L: cell width
 def compare_class(predicted, label, verbose=1, color=True, L=8):
-    unique_l = np.unique(label)
-    matrix = metrics.confusion_matrix(label, predicted)
+    unique_l = np.unique(label)[::-1]
+    matrix = metrics.confusion_matrix(
+        label, predicted, labels=unique_l).transpose()
     layout = [['pr\lb', *unique_l],
               [unique_l[0], *matrix[0]],
               [unique_l[1], *matrix[1]]]
