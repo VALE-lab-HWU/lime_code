@@ -59,3 +59,38 @@ def save_all_histogram_all_data(data, data_cl, title_):
     data_cl = {i: remove_over_represented_data(data_cl[i]) for i in data_cl}
     save_histogram_per_data(data_cl, title, n_range, n_bins)
 
+
+
+
+####
+# metrics
+####
+def get_measure(data, axis=None):
+    res = {}
+    res['min'] = data.min(axis=axis)
+    res['avg'] = data.mean(axis=axis)
+    res['max'] = data.max(axis=axis)
+    mod = stats.mode(data, axis=axis)
+    res['%-mod'] = ((mod[1]/data.size)*100).reshape(-1)
+    res['mad'] = stats.median_abs_deviation(data, axis=axis)
+    res['std'] = data.std(axis=axis)
+    # res['med'] = np.median(data, axis=1)
+    res['10%'], res['25%'], res['med'], res['75%'], res['90%'] = np.percentile(
+        data, [10, 25, 50, 75, 90], axis=axis)
+    return res
+
+
+def print_measure(measure):
+    layout = [[], [], [], [], [], []]
+    mlh.append_layout_col([['10%', '25%', 'med', '75%', '90%'],
+                           ['min', 'avg', 'max', 'std'],
+                           ['mad', 'v-mod', '%-mod']],
+                          measure, layout)
+    mlh.print_matrix(layout)
+
+
+def get_measure_all_cl(data_cl):
+    res = {}
+    for i in data_cl:
+        res[i] = get_measure(data_cl[i], axis=1)
+    return res
