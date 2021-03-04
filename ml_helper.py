@@ -279,7 +279,7 @@ def clean_layout(layout):
 def compare_class(predicted, label, verbose=1, color=True, L=8):
     unique_l = np.unique(label)[::-1]
     matrix = metrics.confusion_matrix(
-        label, predicted, labels=unique_l).transpose()
+        label, predicted, labels=unique_l)
     layout = [['pr\lb', *unique_l],
               [unique_l[0], *matrix[0]],
               [unique_l[1], *matrix[1]]]
@@ -442,11 +442,14 @@ def run_train_and_test_patient(
 # Pipeline
 ####
 # from lime tutorial
+def identity(x):
+    return x
+
 class PipeStep(object):
     """
     Wrapper for turning functions into pipeline transforms (no-fitting)
     """
-    def __init__(self, step_func, inverse_step=lambda x: x):
+    def __init__(self, step_func, inverse_step=identity):
         self._step_func = step_func
         self._inverse_step = inverse_step
 
