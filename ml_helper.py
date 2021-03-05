@@ -117,15 +117,19 @@ def get_score_total(matrix):
 # negative likelihood ratio (lr-)
 def get_score_ratio(score):
     res = {}
-    res['lr+'] = score['tpr'] / score['fpr']
-    res['lr-'] = score['fnr'] / score['tnr']
+    res['lr+'] = score['tpr'] / score['fpr'] if score['fpr'] != 0 else float('inf')
+    res['lr-'] = score['fnr'] / score['tnr'] if score['tnr'] != 0 else float('inf')
     return res
 
 
 # get the f1 value  out of scores of a classification
 def get_score_f1(score):
     res = {}
-    res['f_1'] = 2 * (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
+    denom = (score['ppv'] + score['tpr'])
+    if denom == 0:
+        res['f_1'] = 0
+    else:
+        res['f_1'] = 2.0 *  (score['ppv'] * score['tpr']) / denom
     return res
 
 
