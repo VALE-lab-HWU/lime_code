@@ -63,13 +63,14 @@ def print_matrix(layout, L=8):
         print_line_matrix(len_l, L)
 
 
+
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # precition (ppv)
 def get_score_main(matrix):
     res = {}
-    res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
-    res['ppv'] = matrix[0][0] / matrix[:, 0].sum()
+    res['tpr'] = matrix[0][0] / (matrix[:, 0].sum())
+    res['ppv'] = matrix[0][0] / matrix[0].sum()
     return res
 
 
@@ -80,9 +81,9 @@ def get_score_main(matrix):
 # specificity (tnr)
 def get_score_predicted(matrix):
     res = {}
-    res['tpr'] = matrix[0][0] / (matrix[1][0] + matrix[0][0])
+    res['tpr'] = matrix[0][0] / matrix[:, 0].sum()
     res['fnr'] = 1 - res['tpr']
-    res['fpr'] = matrix[0][1] / (matrix[1][1] + matrix[0][1])
+    res['fpr'] = matrix[0][1] / matrix[:, 1].sum()
     res['tnr'] = 1 - res['fpr']
     return res
 
@@ -94,9 +95,9 @@ def get_score_predicted(matrix):
 # negative predictive value (npv)
 def get_score_label(matrix):
     res = {}
-    res['ppv'] = matrix[0][0] / matrix[:, 0].sum()
+    res['ppv'] = matrix[0][0] / matrix[0].sum()
     res['fdr'] = 1 - res['ppv']
-    res['for'] = matrix[1][0] / matrix[0].sum()
+    res['for'] = matrix[1][0] / matrix[1].sum()
     res['npv'] = 1 - res['for']
     return res
 
@@ -124,7 +125,7 @@ def get_score_ratio(score):
 # get the f1 value  out of scores of a classification
 def get_score_f1(score):
     res = {}
-    res['f_1'] = (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
+    res['f_1'] = 2 * (score['ppv'] * score['tpr']) / (score['ppv'] + score['tpr'])
     return res
 
 
@@ -153,8 +154,7 @@ def get_score_about_score(score):
 # f1 score (f_1)
 # diagnostic odds ratio (dor)
 # area under the roc curve (auc)
-def get_all_score(predicted, label):
-    matrix = metrics.confusion_matrix(label, predicted)
+def get_all_score(predicted, label, matrix):
     res = get_score_predicted(matrix)
     res = {**res, **get_score_label(matrix)}
     res = {**res, **get_score_total(matrix)}
@@ -171,8 +171,7 @@ def get_all_score(predicted, label):
 # prevalence (pre)
 # f1 score (f_1)
 # area under the roc curve (auc)
-def get_score_verbose_2(predicted, label):
-    matrix = metrics.confusion_matrix(label, predicted)
+def get_score_verbose_2(predicted, label, matrix):
     res = get_score_main(matrix)
     res = {**res, **get_score_total(matrix)}
     res = {**res, **get_score_f1(res)}
@@ -231,7 +230,9 @@ def add_color_layout(layout):
 #           [e,f,g,score['acc'],score['auc']],
 #           [h,i,j,score['pre']],
 #           [k,l,m,'pre']]
-def append_layout_col(ele, score, layout, inv=list()):
+def append_layout_col(ele, score, layout, inv=None):
+    if inv is None:
+        inv = []
     inv.extend(np.zeros(len(ele) - len(inv), dtype=int))
     for i in range(len(ele)):
         layout[i*2+(inv[i] % 2)] += ele[i]
@@ -251,7 +252,9 @@ def append_layout_col(ele, score, layout, inv=list()):
 #           [e,f,g],
 #           ['acc', score['acc'], score['pre'], 'pre'],
 #           [score['auc'],'auc']]
-def append_layout_row(ele, score, layout, inv=list()):
+def append_layout_row(ele, score, layout, inv=None):
+    if inv is None:
+        inv = []
     inv.extend(np.zeros(len(ele[0]) - len(inv), dtype=int))
     to_print = [[k for i in range(len(ele[j]))
                  for k in
@@ -279,7 +282,7 @@ def clean_layout(layout):
 def compare_class(predicted, label, verbose=1, color=True, L=8):
     unique_l = np.unique(label)[::-1]
     matrix = metrics.confusion_matrix(
-        label, predicted, labels=unique_l)
+        label, predicted, labels=unique_l).transpose()
     layout = [['pr\lb', *unique_l],
               [unique_l[0], *matrix[0]],
               [unique_l[1], *matrix[1]]]
@@ -293,11 +296,11 @@ def compare_class(predicted, label, verbose=1, color=True, L=8):
             score = get_score_total(matrix)
             append_layout_col([['acc'], ['pre']], score, layout)
         elif (verbose == 2):
-            score = get_score_verbose_2(predicted, label)
+            score = get_score_verbose_2(predicted, label, matrix)
             append_layout_col([['ppv', 'acc'], ['f_1', 'pre']], score, layout)
             append_layout_row([['tpr', 'auc']], score, layout)
         elif (verbose == 3):
-            score = get_all_score(predicted, label)
+            score = get_all_score(predicted, label, matrix)
             append_layout_col([['ppv', 'fdr', 'acc'],
                                ['for', 'npv', 'pre']],
                               score, layout, inv=[0, 1])
