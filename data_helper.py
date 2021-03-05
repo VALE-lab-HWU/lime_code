@@ -116,7 +116,7 @@ def get_data_per_files(path):
 
 
 # read a file and return the array of label and feature extracted
-def get_data_complete(path=PATH, filename=FILENAME, all_feature=False):
+def get_data_complete(path=PATH, filename=FILENAME, all_feature=False, feature='lf'):
     if filename not in os.listdir(path):
         raise Exception('File not found')
         # write_data(path, filename)
@@ -127,7 +127,12 @@ def get_data_complete(path=PATH, filename=FILENAME, all_feature=False):
     if all_feature:
         data = extract_features(data)
     else:
-        data = extract_feature(data)
+        if feature == 'lf':
+            data = lifetime_of_data(data).to_numpy()
+        elif feature == 'it':
+            data = intensity_of_data(data).to_numpy()
+        else:
+            data = extract_feature(data)
     return data, label, patient
 
 

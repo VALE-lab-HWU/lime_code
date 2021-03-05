@@ -34,3 +34,4 @@ def visualize_explanation(explanation, label):
     build_img_explainer(ax2, explanation, label,
                         'Positive/Negative Regions for',
                         positive_only=False)
+    return fig
