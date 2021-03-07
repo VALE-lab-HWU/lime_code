@@ -94,3 +94,24 @@ def get_measure_all_cl(data_cl):
     for i in data_cl:
         res[i] = get_measure(data_cl[i], axis=1)
     return res
+
+
+####
+# dendrogram
+####
+def get_dict_color(childrens, label, color=['red', 'yellow', 'blue']):
+    res = {}
+    for i, child in enumerate(childrens):
+        for j in child:
+            j = int(j)
+            if j < len(label):
+                res[j] = color[label[j]]
+            else:
+                c = childrens[j-len(label)]
+                if res[c[0]] == res[c[1]]:
+                    res[j] = res[c[0]]
+                else:
+                    res[j] = color[-1]
+    res[(len(label) - 1)*2] = color[-1]
+    return res
+ 
