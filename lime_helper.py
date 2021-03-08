@@ -1,6 +1,7 @@
 from lime import lime_image
 from lime.wrappers.scikit_image import SegmentationAlgorithm
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from skimage.color import label2rgb
@@ -35,3 +36,26 @@ def visualize_explanation(explanation, label):
                         'Positive/Negative Regions for',
                         positive_only=False)
     return fig
+
+
+def plot_lime_pca(imgs, title=None):
+    if title is None:
+        title = [['Image', 'Image reduced with PCA'],
+                 ['Masked Image', 'Masked image reduced with PCA']]
+    fig, axs = plt.subplots(len(imgs[0]), len)
+    for i in range(len(axs)):
+        for j in range(len(axs[i])):
+            axs[i][j].imshow(imgs[i][j])
+    return fig, axs
+
+
+def make_plot_lime_projection(explanation, pipeline):
+    image, mask_0, _, mask_1 = (*explanation.get_image_and_mask(0),
+                                *explanation.get_image_and_mask(1))
+    image = pipeline[0].transform([image]).reshape(128, 128)
+    pca_img = pipeline[1].transform([image.reshape(-1)]).reshape(-1)
+    mask = (mask_0 + mask_1).clip(0, 1)
+    masked_img = image * mask
+    pca_masked = pipeline[1].transform(masked_img.reshape(1, -1)).reshape(-1)
+    plot_lime_pca(np.array([[image, 10*[pca_img]],
+                            [masked_img, 10*[pca_masked]]], dtype=object))
