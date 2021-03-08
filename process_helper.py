@@ -76,3 +76,8 @@ def get_color_imgs(data):
     data = scale_img_float(data)
     data = arrays1d_to_color_img(data)
     return data
+
+
+#
+def cut_image(data, s_col=13, e_col=118, s_row=0, e_row=128):
+    return data[s_row:e_row, s_col:e_col]
