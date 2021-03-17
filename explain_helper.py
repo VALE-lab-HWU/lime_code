@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+import matplotlib.lines as lines
 import numpy as np
 from scipy import stats
+from scipy.cluster.hierarchy import dendrogram
 
 import ml_helper as mlh
 
@@ -99,7 +101,13 @@ def get_measure_all_cl(data_cl):
 ####
 # dendrogram
 ####
-def get_dict_color(childrens, label, color=['red', 'yellow', 'blue']):
+COLORS_LIST = ['red', 'yellow', 'blue', 'orange', 'cyan', 'pink', 'gray',
+               'sienna', 'darkviolet', 'magenta', 'deeppink', 'lime',
+               'forestgreen', 'gold', 'limegreen', 'dodgerblue', 'sandybrown',
+               'silver', 'tan', 'olive']
+
+
+def get_dict_color(childrens, label, color=COLORS_LIST, default='black'):
     res = {}
     for i, child in enumerate(childrens):
         for j in child:
@@ -111,7 +119,20 @@ def get_dict_color(childrens, label, color=['red', 'yellow', 'blue']):
                 if res[c[0]] == res[c[1]]:
                     res[j] = res[c[0]]
                 else:
-                    res[j] = color[-1]
-    res[(len(label) - 1)*2] = color[-1]
+                    res[j] = default
+    res[(len(label) - 1)*2] = default
     return res
- 
+
+
+def make_legend(dict_color):
+    return [lines.Line2D([], [], color=i[1], label=i[0])
+            for i in dict_color]
+
+
+def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
+                                color=COLORS_LIST):
+    linkage_matrix = np.array(linkage_matrix)
+    dict_color_idx = list(zip(list(dict.fromkeys(label_to_color)), color))
+    dict_color_label = get_dict_color(
+        linkage_matrix[:, :2], label_to_color, dict_color_idx)
+    dendrogram(linkage_matrix, link_color_func=lambda x: dict_color_label[x])
