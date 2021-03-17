@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import matplotlib.lines as lines
+import matplotlib.lines as line
 import numpy as np
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram
@@ -125,14 +125,15 @@ def get_dict_color(childrens, label, color=COLORS_LIST, default='black'):
 
 
 def make_legend(dict_color):
-    return [lines.Line2D([], [], color=i[1], label=i[0])
+    return [line.Line2D([], [], color=dict_color[i], label=i)
             for i in dict_color]
 
 
 def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
                                 color=COLORS_LIST):
     linkage_matrix = np.array(linkage_matrix)
-    dict_color_idx = list(zip(list(dict.fromkeys(label_to_color)), color))
+    dict_color_idx = dict(zip(list(dict.fromkeys(label_to_color)), color))
     dict_color_label = get_dict_color(
         linkage_matrix[:, :2], label_to_color, dict_color_idx)
     dendrogram(linkage_matrix, link_color_func=lambda x: dict_color_label[x])
+    plt.legend(handles=make_legend(dict_color_idx))
