@@ -177,3 +177,43 @@ def make_label_from_group(label_to_group, groups, label_groups=None):
     return [label_groups[[i in j for j in groups].index(True)]
             for i in label_to_group]
 
+
+def tmp(dcoords, icoords, color_leaves, color_branch, leaves, ax):
+    idx_0 = (dcoords[:, [0, 3]] == 0).any(axis=1)
+    dc0 = dcoords[idx_0]
+    ic0 = icoords[idx_0]
+    order = ic0[:, 0].argsort()
+    dc0 = dc0[order]
+    ic0 = ic0[order]
+    i = 0
+    col2 = []
+    for j in range(len(dc0)):
+        for k in [0, 3]:
+            if dc0[j][k] == 0:
+                k2 = (k % 2)+1
+                k3 = (k+2) % 4
+                link = [[(ic0[j][k], dc0[j][k]),
+                         (ic0[j][k2], dc0[j][k2]),
+                         ((ic0[j][3] + ic0[j][0])/2, dc0[j][k3])]]
+                col = matplotlib.collections.LineCollection(
+                    link, colors=(color_leaves[leaves[i]]))
+                col2.append(col)
+                ax.add_collection(col)
+                i += 1
+    idx_n0 = (dcoords[:, [0, 3]] != 0).any(axis=1)
+    dcn0 = dcoords[idx_n0]
+    icn0 = icoords[idx_n0]
+    color_branch_n0 = color_branch[idx_n0]
+    for j in range(len(dcn0)):
+        for k in [0, 3]:
+            if dcn0[j][k] != 0:
+                k2 = (k % 2)+1
+                k3 = (k+2) % 4
+                link = [[(icn0[j][k], dcn0[j][k]),
+                         (icn0[j][k2], dcn0[j][k2]),
+                         ((icn0[j][3] + icn0[j][0])/2, dcn0[j][k3])]]
+                col = matplotlib.collections.LineCollection(
+                    link, colors=(color_branch_n0[j]))
+                col2.append(col)
+                ax.add_collection(col)
+    return col2
