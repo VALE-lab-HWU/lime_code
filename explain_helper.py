@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
-import matplotlib.lines as line
+import matplotlib.lines as mpline
+import matplotlib
 import numpy as np
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram
-
+import scipy.cluster.hierarchy as hierarchy
 import ml_helper as mlh
 
 
@@ -107,7 +108,9 @@ COLORS_LIST = ['red', 'yellow', 'blue', 'orange', 'cyan', 'pink', 'gray',
                'silver', 'tan', 'olive']
 
 
-def get_dict_color(childrens, label, color=COLORS_LIST, default='black'):
+def get_dict_color(childrens, label, color=None, default='black'):
+    if color is None:
+        color = COLORS_LIST
     res = {}
     for i, child in enumerate(childrens):
         for j in child:
@@ -125,15 +128,52 @@ def get_dict_color(childrens, label, color=COLORS_LIST, default='black'):
 
 
 def make_legend(dict_color):
-    return [line.Line2D([], [], color=dict_color[i], label=i)
+    return [mpline.Line2D([], [], color=dict_color[i], label=i)
             for i in dict_color]
 
 
 def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
-                                color=COLORS_LIST):
+                                color=COLORS_LIST, default='black', **kwargs):
+    if color is None:
+        color = COLORS_LIST
     linkage_matrix = np.array(linkage_matrix)
     dict_color_idx = dict(zip(list(dict.fromkeys(label_to_color)), color))
     dict_color_label = get_dict_color(
         linkage_matrix[:, :2], label_to_color, dict_color_idx)
-    dendrogram(linkage_matrix, link_color_func=lambda x: dict_color_label[x])
+    dendrogram(linkage_matrix, link_color_func=lambda x: dict_color_label[x],
+               **kwargs)
     plt.legend(handles=make_legend(dict_color_idx))
+
+
+# from https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
+def make_linkage_matrix(model):
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack([model.children_, model.distances_,
+                                      counts]).astype(float)
+    return linkage_matrix
+
+
+def plot_dendrogram_from_model(model, label_to_color, color=COLORS_LIST,
+                               default='black', **kwargs):
+    if color is None:
+        color = COLORS_LIST
+    linkage_mat = make_linkage_matrix(model)
+    plot_dendrogram_from_matrix(linkage_mat, label_to_color, color, **kwargs)
+
+
+def make_label_from_group(label_to_group, groups, label_groups=None):
+    if label_groups is None:
+        label_groups = list(range(len(groups)))
+    return [label_groups[[i in j for j in groups].index(True)]
+            for i in label_to_group]
+
