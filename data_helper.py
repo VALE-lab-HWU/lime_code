@@ -7,7 +7,7 @@ PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
 FILENAME_SMALL = 'cleaned_3000_patient.pickle'
 FILENAME_MEDIUM = 'cleaned_10000_patient.pickle'
-
+FILENAME_MINI = 'cleaned_150_patient.pickle'
 
 # read the data in the file located at the filepath
 # dic is an option because some pickle file, when loaded, are inside dic
@@ -104,6 +104,18 @@ def get_datas(path=PATH, filename=FILENAME):
     intensity, lifetime = extract_features(data)
     label = extract_label(data)
     return intensity, lifetime,  label
+
+
+# extract the intensity from a file
+def get_intensity(path=PATH, filename=FILENAME):
+    data = read_data_pickle(path+'/'+filename, False)
+    return intensity_of_data(data).to_numpy()
+
+
+# etract the lifetime from a file
+def get_lifetime(path=PATH, filename=FILENAME):
+    data = read_data_pickle(path+'/'+filename, False)
+    return lifetime_of_data(data).to_numpy()
 
 
 # extract data from all files
