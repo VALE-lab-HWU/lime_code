@@ -57,7 +57,7 @@ def main_one_run(path=dh.PATH, filename=dh.FILENAME):
 
 def main_lime_advanced(p_train=range(0, 16), p_test=range(16, 20), index=True,
                        path=dh.PATH, filename=dh.FILENAME):
-    data, label, patient = dh.get_data_complete(path, filename, False)
+    data, label, patient = dh.get_data_complete(path, filename, False, feature='it')
     if index:
         p_idx = dh.get_patient_dict(patient)
         p_train = [p_idx[i] for i in p_train]
@@ -65,15 +65,16 @@ def main_lime_advanced(p_train=range(0, 16), p_test=range(16, 20), index=True,
     pip_color = mlh.build_pipeline_to_color()
     pip_process = mlh.build_pipeline_classify(
         mh.build_random_forest_model,
-        model_kwargs={'n_jobs': 10, 'n_estimators': 100, 'max_features': 32})
+        model_kwargs={'n_jobs': 10, 'n_estimators': 450, 'max_features': 0.80})
     data = pip_color.transform(data)
     x_train, x_test, y_train, y_test = mlh.get_train_and_test(
         p_train, p_test, data, label, patient)
+    del data
     pip_process.fit(x_train, y_train)
     predicted = pip_process.predict(x_test)
     mlh.compare_class(predicted, y_test, verbose=3, color=True)
-    index_cl = mlh.get_index_claffication(predicted, y_test)
-    data_cl = eh.get_data_per_classification(data, index_cl)
+    index_cl = mlh.get_index_claffication(predicted, y_test, False)
+    data_cl = eh.get_data_per_classification(x_test, index_cl)
     eh.save_all_histogram_all_data(x_test, data_cl, 'graph_explain')
     explainer, segmenter = lh.get_explainer()
     for i in data_cl:
@@ -88,6 +89,7 @@ def main_lime_advanced(p_train=range(0, 16), p_test=range(16, 20), index=True,
     plt.show()
 
 
+
 if __name__ == '__main__':
     print('Set seed')
     np.random.seed(RANDOM_SEED)
@@ -97,4 +99,5 @@ if __name__ == '__main__':
     #main_per_patient()
     #main_one_run()
     #main_lime()
-    main_one_run_patient_split()
+    #main_one_run_patient_split()
+    main_lime_advanced()

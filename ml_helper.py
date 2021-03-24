@@ -361,14 +361,15 @@ def get_index_well_labeled(predicted, label):
 # true negative (tn)
 # mislabeled (f)
 # well labeled (t)
-def get_index_claffication(predicted, label):
+def get_index_claffication(predicted, label, t_f=True):
     res = {}
     res['fp'] = get_index_false_positive(predicted, label)
     res['fn'] = get_index_false_negative(predicted, label)
     res['tp'] = get_index_true_positive(predicted, label)
     res['tn'] = get_index_true_negative(predicted, label)
-    res['f'] = get_index_mislabeled(predicted, label)
-    res['t'] = get_index_well_labeled(predicted, label)
+    if t_f:
+        res['f'] = get_index_mislabeled(predicted, label)
+        res['t'] = get_index_well_labeled(predicted, label)
     return res
 
 
