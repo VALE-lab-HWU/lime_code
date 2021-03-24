@@ -63,8 +63,6 @@ def save_all_histogram_all_data(data, data_cl, title_):
     save_histogram_per_data(data_cl, title, n_range, n_bins)
 
 
-
-
 ####
 # metrics
 ####
@@ -133,15 +131,23 @@ def make_legend(dict_color):
 
 
 def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
-                                color=COLORS_LIST, default='black', **kwargs):
+                                color=COLORS_LIST, default='black',
+                                no_plot=True, no_label=True, **kwargs):
     if color is None:
         color = COLORS_LIST
     linkage_matrix = np.array(linkage_matrix)
     dict_color_idx = dict(zip(list(dict.fromkeys(label_to_color)), color))
     dict_color_label = get_dict_color(
         linkage_matrix[:, :2], label_to_color, dict_color_idx)
-    dendrogram(linkage_matrix, link_color_func=lambda x: dict_color_label[x],
-               **kwargs)
+    d_struct = dendrogram(
+        linkage_matrix, link_color_func=lambda x: dict_color_label[x],
+        no_plot=no_plot, no_labels=no_label, **kwargs)
+    if no_plot:
+        mh = max(linkage_matrix[:, 2])
+        my_plot_dendrogram(
+            np.array(d_struct['dcoord']), np.array(d_struct['icoord']),
+            dict_color_label, np.array(d_struct['color_list']),
+            np.array(d_struct['leaves']), mh, d_struct['ivl'], no_label)
     plt.legend(handles=make_legend(dict_color_idx))
 
 
@@ -164,11 +170,13 @@ def make_linkage_matrix(model):
 
 
 def plot_dendrogram_from_model(model, label_to_color, color=COLORS_LIST,
-                               default='black', **kwargs):
+                               default='black', no_plot=True, no_label=True,
+                               **kwargs):
     if color is None:
         color = COLORS_LIST
     linkage_mat = make_linkage_matrix(model)
-    plot_dendrogram_from_matrix(linkage_mat, label_to_color, color, **kwargs)
+    plot_dendrogram_from_matrix(linkage_mat, label_to_color, color,
+                                no_plot=no_plot, no_label=no_label, **kwargs)
 
 
 def make_label_from_group(label_to_group, groups, label_groups=None):
@@ -178,7 +186,62 @@ def make_label_from_group(label_to_group, groups, label_groups=None):
             for i in label_to_group]
 
 
-def tmp(dcoords, icoords, color_leaves, color_branch, leaves, ax):
+def make_label_from_index(indexs, size, label_group=None):
+    if label_group is None:
+        label_group = list(range())
+    res = np.zeros(size, dtype=object)
+    for i in range(len(indexs)):
+        res[indexs[i]] = label_group[i]
+    return res
+
+
+def make_label_from_dict_index(dict_idx, size):
+    return make_label_from_index(list(dict_idx.values()), size,
+                                 list(dict_idx.keys()))
+
+
+def make_label_from_dict_and_group(label_to_group, groups, dict_idx,
+                                   label_groups=None, keys_idx=None):
+    if label_groups is None:
+        label_group = list(range())
+        keys_idx = label_group[-1]
+    if keys_idx is None:
+        label_groups[-1]
+    groups = np.array(make_label_from_group(label_to_group, groups,
+                                            label_groups))
+    group_dict = make_label_from_dict_index(dict_idx,
+                                            len(groups[groups == keys_idx]))
+    groups[groups == keys_idx] = group_dict
+    return groups
+
+
+def set_up_ax_ticks(ax, ivl):
+    iv_ticks = np.arange(5, len(ivl) * 10 + 5, 10)
+    ax.set_xticks(iv_ticks)
+    ax.xaxis.set_ticks_position('bottom')
+    for line in ax.get_xticklines():
+        line.set_visible(False)
+    leaf_rot = float(hierarchy._get_tick_rotation(len(ivl)))
+    leaf_font = float(hierarchy._get_tick_text_size(len(ivl)))
+    ax.set_xticklabels(ivl, rotation=leaf_rot, size=leaf_font)
+
+
+def my_plot_dendrogram(dcoords, icoords, color_leaves, color_branch, leaves,
+                       mh, ivl, no_label, ax=None):
+    if ax is None:
+        ax = plt.gca()
+    # Independent variable plot width
+    ivw = len(ivl) * 10
+    # Dependent variable plot height
+    dvw = mh + mh * 0.05
+    ax.set_ylim([0, dvw])
+    ax.set_xlim([0, ivw])
+    if not no_label:
+        set_up_ax_ticks(ax, ivl)
+    ica0 = icoords[(dcoords == 0).all(1)]
+    idc = (ica0[:, 0] + ica0[:, 3]) / 2
+    dcoords[:, 3][np.isin(icoords[:, 3], idc)] += 0.5
+    dcoords[:, 0][np.isin(icoords[:, 0], idc)] += 0.5
     order = icoords[:, 0].argsort()
     dc0 = dcoords[order]
     ic0 = icoords[order]
