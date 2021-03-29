@@ -238,8 +238,11 @@ def my_plot_dendrogram(dcoords, icoords, color_leaves, color_branch, leaves,
     ax.set_xlim([0, ivw])
     if not no_label:
         set_up_ax_ticks(ax, ivl)
-    ica0 = icoords[(dcoords == 0).all(1)]
+    idx = (dcoords == 0).all(1)
+    ica0 = icoords[idx]
     idc = (ica0[:, 0] + ica0[:, 3]) / 2
+    dcoords[:, 2][idx] += 0.5
+    dcoords[:, 1][idx] += 0.5
     dcoords[:, 3][np.isin(icoords[:, 3], idc)] += 0.5
     dcoords[:, 0][np.isin(icoords[:, 0], idc)] += 0.5
     order = icoords[:, 0].argsort()
