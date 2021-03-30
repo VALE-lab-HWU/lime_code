@@ -106,6 +106,12 @@ COLORS_LIST = ['red', 'yellow', 'blue', 'orange', 'cyan', 'pink', 'gray',
                'silver', 'tan', 'olive']
 
 
+# return a dictionary of color, one color for each link id of a dendrogram
+# childrens: childrens_ from a sklearn model or the 2 first columns
+# of a linkage matrix from scipy
+# label: array to use for coloration
+# color: list of color to use
+# default. color for ;ulti label link
 def get_dict_color(childrens, label, color=None, default='black'):
     if color is None:
         color = COLORS_LIST
@@ -125,11 +131,24 @@ def get_dict_color(childrens, label, color=None, default='black'):
     return res
 
 
+# create a legend for matplotlib for a dendrogram
+# use a dictionary (or an array)
+# dict_color: {'l1': 'red', 'l2': 'yellow'}
 def make_legend(dict_color):
     return [mpline.Line2D([], [], color=dict_color[i], label=i)
             for i in dict_color]
 
 
+# plot a dendrogram from a linkage matrix from scipy
+# and color it using label_to_color
+# model: a linkage matrix
+# label_to_color: an array of the size of the data fitted in the matrix
+# color: the list of color to use
+# default: the color for the link with multiple label
+# no_plot: don't plot using dendrogram from scipy, instead
+#   plot using the homemade function
+# n0_label: don't plot the label in the X axis
+# kwargs: any argument to give to the dendrogram function from scipy
 def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
                                 color=COLORS_LIST, default='black',
                                 no_plot=True, no_label=True, **kwargs):
@@ -152,6 +171,7 @@ def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
 
 
 # from https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
+# create a linkage matrix like the one from scipy linkage function
 def make_linkage_matrix(model):
     counts = np.zeros(model.children_.shape[0])
     n_samples = len(model.labels_)
@@ -169,6 +189,15 @@ def make_linkage_matrix(model):
     return linkage_matrix
 
 
+# plot a dendrogram from an sklearn model + color it with label_to_color
+# model: an AggregativeClustering sklearn object
+# label_to_color: an array of the size of the data fitted in the model
+# color: the list of color to use
+# default: the color for the link with multiple label
+# no_plot: don't plot using dendrogram from scipy, instead
+#   plot using the homemade function
+# n0_label: don't plot the label in the X axis
+# kwargs: any argument to give to the dendrogram function from scipy
 def plot_dendrogram_from_model(model, label_to_color, color=COLORS_LIST,
                                default='black', no_plot=True, no_label=True,
                                **kwargs):
@@ -179,6 +208,13 @@ def plot_dendrogram_from_model(model, label_to_color, color=COLORS_LIST,
                                 no_plot=no_plot, no_label=no_label, **kwargs)
 
 
+# transform an array of array of index and array of array of value to group
+# into an array of value
+# the label_groups are the value to replace if specified, otherwise it's int
+# ex: label_to_group: [0,1,0,2,1,2,0]
+# groups: [[0,1],[2]]
+# label_groups: ['train', 'test']
+# ['train', 'train', 'train', 'test', 'train', 'test', 'train']
 def make_label_from_group(label_to_group, groups, label_groups=None):
     if label_groups is None:
         label_groups = list(range(len(groups)))
@@ -186,35 +222,65 @@ def make_label_from_group(label_to_group, groups, label_groups=None):
             for i in label_to_group]
 
 
+# transform an array of array of index in array of array of values
+# size: number of total elements in indexs
+# indexs: array of array of indexs
+# label_group: the value to place at each index
 def make_label_from_index(indexs, size, label_group=None):
     if label_group is None:
-        label_group = list(range())
+        label_group = list(range(size))
     res = np.zeros(size, dtype=object)
     for i in range(len(indexs)):
         res[indexs[i]] = label_group[i]
     return res
 
 
+# return an based on a dictionnary index
+# each value of the dict is an array of int representing the index
+# the returned array has the a value equal to the key for the index
+# size is the number of element in total in the values of the dict
+# ex: {'tn': [1,2], 'fp': [0]}
+# -> ['fp', 'tn', 'tn']
 def make_label_from_dict_index(dict_idx, size):
     return make_label_from_index(list(dict_idx.values()), size,
                                  list(dict_idx.keys()))
 
 
+# return an array
+# the array is built using label_to_group and groups
+# groups is an array of array of value present in label_to_group
+# they will be grouped under the same value
+# ex:
+#   - label_to_group: [0,1,0,2,1,2,0]
+#   - groups: [[0,1],[2]]
+#   -> [0, 0, 0, 1, 0, 1, 0]
+# then the value equal to the value given in keys_idx/the last array in groups
+# will be changed using the dictionnary dict_idx which a dict of index
+# ex:
+#   - dict_idx: {'p': [0], 'l': [1]}
+#   -> [0, 0, 0, 'p', 0, 'l', 0]
+# label_group is the label to use during the first part
+# if None it will be set to a list of integer, from 0 to length of groups - 1
+# keys_idx is the key used to apply change the label in the second part
+# if None, it will be set to the last label
 def make_label_from_dict_and_group(label_to_group, groups, dict_idx,
                                    label_groups=None, keys_idx=None):
     if label_groups is None:
-        label_group = list(range())
-        keys_idx = label_group[-1]
-    if keys_idx is None:
-        label_groups[-1]
-    groups = np.array(make_label_from_group(label_to_group, groups,
-                                            label_groups))
+        label_groups = list(range(len(groups)))
+        keys_idx = label_groups[-1]
+    elif keys_idx is None:
+        keys_idx = label_groups[-1]
+    array_groups = np.array(make_label_from_group(label_to_group, groups,
+                                                  label_groups),
+                            dtype=object)
     group_dict = make_label_from_dict_index(dict_idx,
                                             len(groups[groups == keys_idx]))
-    groups[groups == keys_idx] = group_dict
-    return groups
+    array_groups[array_groups == keys_idx] = group_dict
+    return array_groups
 
 
+# set up the label for the dendrogram
+# copied from the original function _plot_dendrogram from scipy
 def set_up_ax_ticks(ax, ivl):
     iv_ticks = np.arange(5, len(ivl) * 10 + 5, 10)
     ax.set_xticks(iv_ticks)
@@ -226,6 +292,10 @@ def set_up_ax_ticks(ax, ivl):
     ax.set_xticklabels(ivl, rotation=leaf_rot, size=leaf_font)
 
 
+# homemade rewrite of the _plot_dendrogram function from scipy
+# it doesn't have option for orientation
+# it takes the different value from the dendrogram function
+# color the branch one by one instead of by link
 def my_plot_dendrogram(dcoords, icoords, color_leaves, color_branch, leaves,
                        mh, ivl, no_label, ax=None):
     if ax is None:
