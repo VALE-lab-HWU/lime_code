@@ -151,7 +151,8 @@ def make_legend(dict_color):
 # kwargs: any argument to give to the dendrogram function from scipy
 def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
                                 color=COLORS_LIST, default='black',
-                                no_plot=True, no_label=True, **kwargs):
+                                no_plot=True, no_label=True,
+                                no_legend=False, **kwargs):
     if color is None:
         color = COLORS_LIST
     linkage_matrix = np.array(linkage_matrix)
@@ -167,7 +168,8 @@ def plot_dendrogram_from_matrix(linkage_matrix, label_to_color,
             np.array(d_struct['dcoord']), np.array(d_struct['icoord']),
             dict_color_label, np.array(d_struct['color_list']),
             np.array(d_struct['leaves']), mh, d_struct['ivl'], no_label)
-    plt.legend(handles=make_legend(dict_color_idx))
+        if not no_legend:
+            plt.legend(handles=make_legend(dict_color_idx))
 
 
 # from https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
@@ -200,12 +202,13 @@ def make_linkage_matrix(model):
 # kwargs: any argument to give to the dendrogram function from scipy
 def plot_dendrogram_from_model(model, label_to_color, color=COLORS_LIST,
                                default='black', no_plot=True, no_label=True,
-                               **kwargs):
+                               no_legend=False, **kwargs):
     if color is None:
         color = COLORS_LIST
     linkage_mat = make_linkage_matrix(model)
     plot_dendrogram_from_matrix(linkage_mat, label_to_color, color,
-                                no_plot=no_plot, no_label=no_label, **kwargs)
+                                no_plot=no_plot, no_label=no_label,
+                                no_legend=no_legend, **kwargs)
 
 
 # transform an array of array of index and array of array of value to group
