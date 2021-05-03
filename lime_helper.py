@@ -42,10 +42,11 @@ def plot_lime_pca(imgs, title=None):
     if title is None:
         title = [['Image', 'Image reduced with PCA'],
                  ['Masked Image', 'Masked image reduced with PCA']]
-    fig, axs = plt.subplots(len(imgs[0]), len)
+    fig, axs = plt.subplots(len(imgs[0]), len(imgs))
     for i in range(len(axs)):
         for j in range(len(axs[i])):
             axs[i][j].imshow(imgs[i][j])
+            axs[i][j].set_title(title[i][j])
     return fig, axs
 
 
