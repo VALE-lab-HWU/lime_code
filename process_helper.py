@@ -1,5 +1,6 @@
 from skimage.color import gray2rgb, rgb2gray
 import numpy as np
+from math import sqrt, ceil
 
 
 # scale data to have the max being equal to u_bound
@@ -33,7 +34,7 @@ def transform_data(data, fn):
 # output: 3d array, row/row of row are of size sqrt(X)
 def reshape_imgs(data):
     dim = int(len(data[0]) ** (1/2))
-    return transform_data(data, lambda d: np.reshape(d, (dim, dim)))
+    return transform_data(data, lambda d: np.reshape(d, (dim, dim, -1)))
 
 
 # flatten each element of data
@@ -50,7 +51,7 @@ def color_imgs(data):
 
 # input: element of data are 3d or 4d array
 # output: element of output are 2d or 3d array
-# convert all element to grey. Last dimension should be 3
+# convert alfrom importlib import reload  l element to grey. Last dimension should be 3
 # 0.2125 R + 0.7154 G + 0.0721 B
 def gray_imgs(data):
     return transform_data(data, rgb2gray)
@@ -81,3 +82,15 @@ def get_color_imgs(data):
 #
 def cut_image(data, s_col=13, e_col=118, s_row=0, e_row=128):
     return data[s_row:e_row, s_col:e_col]
+
+
+#
+def pad_array_to_square(data):
+    close_square = ceil(sqrt(data.shape[0]))
+    fill_needed = (close_square ** 2) - data.shape[0]
+    return np.pad(data, (0, fill_needed))
+
+
+#
+def pad_arrays_to_square(data):
+    return transform_data(data, pad_array_to_square)

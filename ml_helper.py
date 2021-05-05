@@ -475,9 +475,12 @@ class PipeStep(object):
 # input: rgb 2d
 # step1: gray 2d
 # step2: gray 1s
-def build_pipeline_to_gray():
+def build_pipeline_to_gray(flatten=True):
     makegray_step = PipeStep(ph.gray_imgs)  # , ph.color_imgs)
-    flatten_step = PipeStep(ph.flatten_data)  # , ph.reshape_imgs)
+    if flatten:
+        flatten_step = PipeStep(ph.flatten_data)  # , ph.reshape_imgs)
+    else:
+        flatten_step = PipeStep(identity)
     return Pipeline([
         ('Make Gray', makegray_step),
         ('Flatten Image', flatten_step),
@@ -489,9 +492,12 @@ def build_pipeline_to_gray():
 # step1: put in float from 0 to 1
 # step2: reshape
 # step3: color
-def build_pipeline_to_color():
+def build_pipeline_to_color(reshape=True):
     scale_float_step = PipeStep(ph.scale_img_float)
-    reshape_step = PipeStep(ph.reshape_imgs)
+    if reshape:
+        reshape_step = PipeStep(ph.reshape_imgs)
+    else:
+        reshape_step = PipeStep(identity)
     color_step = PipeStep(ph.color_imgs)
     return Pipeline([
         ('Scale to float 0-1', scale_float_step),
@@ -527,4 +533,27 @@ def build_pipeline_classify(model, model_kwargs={}, pipeline_kwargs={}):
         ('Gray Img ', step1),
         ('Process PCA', step2),
         ('Fit Img', step3)
+    ])
+
+
+# doesn't work
+def build_pipline_gray_clasify(model, model_kwargs={}):
+    step1 = build_pipeline_to_gray()
+    step2 = model(**model_kwargs)
+    return Pipeline([
+        ('Gray Img ', step1),
+        ('Fit Img', step2)
+    ])
+
+# doesn't work
+def build_pipeline_pca_rgb(pipeline_kwargs={}):
+    step1 = build_pipeline_pca_scale(**pipeline_kwargs)
+    step2 = PipeStep(ph.pad_arrays_to_square)
+    step3 = build_pipeline_to_color(reshape=False)
+    step4 = PipeStep(ph.reshape_imgs)
+    return Pipeline([
+        ('Process PCA', step1),
+        ('Pad Square', step2),
+        ('Color Img ', step3),
+        ('Reshape', step4)
     ])
