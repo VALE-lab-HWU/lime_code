@@ -63,17 +63,34 @@ def print_matrix(layout, L=8):
         print_line_matrix(len_l, L)
 
 
+def dvd(a,b):
+    if b == 0:
+        return float('inf')
+    else:
+        return a/b
 
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # precition (ppv)
 def get_score_main(matrix):
     res = {}
-    res['tpr'] = matrix[0][0] / (matrix[:, 0].sum())
-    res['ppv'] = matrix[0][0] / matrix[0].sum()
+    res['tpr'] = dvd(matrix[0][0], (matrix[:, 0].sum()))
+    res['ppv'] = dvd(matrix[0][0], matrix[0].sum())
     return res
 
 
+def get_score_predicted_1(matrix):
+    res = {}
+    res['tpr'] = dvd(matrix[0][0], matrix[:, 0].sum())
+    res['fpr'] = dvd(matrix[0][1], matrix[:, 1].sum())
+    return res
+
+def get_score_predicted_2(matrix):
+    res = {}
+    res['fnr'] = dvd(matrix[1][0], matrix[:, 0].sum())
+    res['tnr'] = dvd(matrix[1][1], matrix[:, 1].sum())
+    return res
+    
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # fall-out  (fpr)
@@ -81,12 +98,23 @@ def get_score_main(matrix):
 # specificity (tnr)
 def get_score_predicted(matrix):
     res = {}
-    res['tpr'] = matrix[0][0] / matrix[:, 0].sum()
-    res['fnr'] = 1 - res['tpr']
-    res['fpr'] = matrix[0][1] / matrix[:, 1].sum()
-    res['tnr'] = 1 - res['fpr']
+    res = {**res, **get_score_predicted_1(matrix)}
+    res = {**res, **get_score_predicted_2(matrix)}
     return res
 
+
+def get_score_label_1(matrix):
+    res = {}
+    res['ppv'] = dvd(matrix[0][0], matrix[0].sum())
+    res['for'] = dvd(matrix[1][0], matrix[1].sum())
+    return res
+
+
+def get_score_label_2(matrix):
+    res = {}
+    res['fdr'] = dvd(matrix[0][1], matrix[0].sum())
+    res['npv'] = dvd(matrix[1][1], matrix[1].sum())
+    return res
 
 # get multiple values out of a confusion matrix
 # precision (ppv)
@@ -95,10 +123,20 @@ def get_score_predicted(matrix):
 # negative predictive value (npv)
 def get_score_label(matrix):
     res = {}
-    res['ppv'] = matrix[0][0] / matrix[0].sum()
-    res['fdr'] = 1 - res['ppv']
-    res['for'] = matrix[1][0] / matrix[1].sum()
-    res['npv'] = 1 - res['for']
+    res = {**res, **get_score_label_1(matrix)}
+    res = {**res, **get_score_label_2(matrix)}
+    return res
+
+
+def get_accuracy(matrix):
+    res = {}
+    res['acc'] = dvd(sum(matrix.diagonal()), matrix.sum())
+    return res
+
+
+def get_prevalence(matrix):
+    res = {}
+    res['pre'] = dvd(matrix[:, 0].sum(), matrix.sum())
     return res
 
 
@@ -107,8 +145,8 @@ def get_score_label(matrix):
 # prevalence (pre)
 def get_score_total(matrix):
     res = {}
-    res['acc'] = sum(matrix.diagonal()) / matrix.sum()
-    res['pre'] = matrix[:, 0].sum() / matrix.sum()
+    res = {**res, **get_accuracy(matrix)}
+    res = {**res, **get_prevalence(matrix)}
     return res
 
 
@@ -117,8 +155,8 @@ def get_score_total(matrix):
 # negative likelihood ratio (lr-)
 def get_score_ratio(score):
     res = {}
-    res['lr+'] = score['tpr'] / score['fpr'] if score['fpr'] != 0 else float('inf')
-    res['lr-'] = score['fnr'] / score['tnr'] if score['tnr'] != 0 else float('inf')
+    res['lr+'] = dvd(score['tpr'], score['fpr'])
+    res['lr-'] = dvd(score['fnr'], score['tnr'])
     return res
 
 
@@ -138,7 +176,7 @@ def get_score_f1(score):
 # diagnostic odds ratio (dor)
 def get_score_about_score(score):
     res = get_score_f1(score)
-    res['dor'] = score['lr+'] / score['lr-']
+    res['dor'] = dvd(score['lr+'], score['lr-'])
     return res
 
 
@@ -275,7 +313,7 @@ def clean_layout(layout):
     layout = [[str(round(i, 3)) if isinstance(i, float) else str(i) for i in j]
               for j in layout]
     return layout
-
+    
 
 # print a comparison of the result of a classification
 # label vs predicted
@@ -283,8 +321,9 @@ def clean_layout(layout):
 # verbose: how much measure are to be displayed (0,1,2,3)
 # color: put color in
 # L: cell width
-def compare_class(predicted, label, verbose=1, color=True, L=8):
-    unique_l = np.unique(label)[::-1]
+def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
+    if unique_l is None:
+        unique_l = np.unique(label)[::-1]
     matrix = metrics.confusion_matrix(
         label, predicted, labels=unique_l).transpose()
     layout = [['pr\lb', *unique_l],
@@ -385,16 +424,17 @@ def shuffle_arrays_of_array(*arrays):
 # run a cross valisation, using fn as classifier
 # datas and label are array of data/label
 # each element of data/label will be a fold
-def run_cross_validation(fn, datas, labels, **kwargs):
+def run_cross_validation(fn, datas, labels, shuffle=False, **kwargs):
     res = []
     for i in range(len(datas)):
         print('fold %d' % i)
-        x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:])))
+        x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:]), dtype=object), dtype=float)
         y_train = np.concatenate(np.concatenate((labels[:i],
-                                                 labels[i+1:])))
-        x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
+                                                 labels[i+1:]), dtype=object), dtype=int)
+        if shuffle:
+            x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
         x_test = datas[i]
-        y_test = labels[i]
+        y_test = np.array(labels[i], dtype=int)
         predicted = fn(x_train, y_train, x_test, **kwargs)
         res.append((predicted, y_test))
     return res
@@ -420,17 +460,17 @@ def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
     return (x_test, predicted, y_test)
 
 
-def get_data_label_from_patient(p_index, patient,  data, label):
+def get_data_label_from_patient(p_index, patient,  *data):
     index = np.isin(patient, p_index)
-    return data[index], label[index]
+    return [d[index] for d in data]
 
 
 #
-def get_train_and_test(p_train, p_test, data, label, patient):
-    x_train, y_train = get_data_label_from_patient(
-        p_train, patient, data, label)
-    x_test, y_test = get_data_label_from_patient(p_test, patient, data, label)
-    return x_train, x_test, y_train, y_test
+def get_train_and_test(p_train, p_test, patient, *data):
+    d_train = get_data_label_from_patient(
+        p_train, patient, *data)
+    d_test = get_data_label_from_patient(p_test, patient, *data)
+    return *d_train, *d_test
 
 
 # run a simple train and test classification
