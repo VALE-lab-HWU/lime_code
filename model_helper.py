@@ -1,5 +1,6 @@
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
 
 # return a kmeans instance from sklearn
@@ -14,9 +15,13 @@ def build_random_forest_model(**kwargs):
     return RandomForestClassifier(**kwargs)
 
 
+def build_mlp_model(**kwargs):
+    return MLPClassifier(**kwargs)
+
+
 # return a trained model on x and y
-def get_model(x_train, y_train, **kwargs):
-    model = build_random_forest_model(**kwargs)
+def get_model(x_train, y_train, model_fn=build_mlp_model, **kwargs):
+    model = model_fn(**kwargs)
     model.fit(x_train, y_train)
     return model
 
