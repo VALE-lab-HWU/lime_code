@@ -8,29 +8,41 @@ import scipy.cluster.hierarchy as hierarchy
 import ml_helper as mlh
 
 
+N_BINS = 128
+
+
 ####
 # Histogram
 ####
-def build_histogram(data, n_range=None, n_bins=226):
+def build_histogram(data, n_range=None, n_bins=N_BINS):
     fig, axs = plt.subplots(1, 1)
     axs.hist(data, bins=n_bins, range=n_range)
     return fig, axs
 
 
-def save_histogram(data, title, n_range=None, n_bins=226):
-    fig, axs = build_histogram(data.reshape(-1), n_range, n_bins)
+def save_histogram(data, title, n_range=None, n_bins=N_BINS):
+    if n_bins is None:
+        if (len(data)) == 0:
+            n_bins = 1
+        else:
+            n_bins = data.max() - data.min()
+            if n_bins < 10:
+                n_bins *= 20
+            if n_bins == 0:
+                n_bins = 1
+    fig, raxs = build_histogram(data.reshape(-1), n_range, int(n_bins))
     plt.savefig(title + ".png")
-    plt.clf()
+    plt.close('all')
 
 
-def plot_histogram(data, title, n_range=None, n_bins=226):
+def plot_histogram(data, title, n_range=None, n_bins=N_BINS):
     fig, axs = build_histogram(data.reshape(-1), n_range)
     plt.show(block=False)
 
 
 # not really used
 def save_histogram_per_classification(
-        data, index_cl, title, n_range=None, n_bins=226):
+        data, index_cl, title, n_range=None, n_bins=N_BINS):
     save_histogram(data, title + ' full', n_range, n_bins)
     for i in index_cl:
         save_histogram(data[index_cl[i]], title+' '+i, n_range, n_bins)
@@ -277,7 +289,7 @@ def make_label_from_dict_and_group(label_to_group, groups, dict_idx,
                                                   label_groups),
                             dtype=object)
     group_dict = make_label_from_dict_index(dict_idx,
-                                            len(groups[groups == keys_idx]))
+                                            len(array_groups[array_groups == keys_idx]))
     array_groups[array_groups == keys_idx] = group_dict
     return array_groups
 
@@ -338,3 +350,8 @@ def my_plot_dendrogram(dcoords, icoords, color_leaves, color_branch, leaves,
                 col = matplotlib.collections.LineCollection(
                     link, colors=(color_branch_0[j]))
             ax.add_collection(col)
+
+
+# distance
+def calculateDistance(i1, i2):
+    return np.sum((i1-i2)**2)
