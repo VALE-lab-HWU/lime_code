@@ -69,26 +69,54 @@ def dvd(a,b):
     else:
         return a/b
 
+
+def get_roc_auc_score(predicted, label):
+    res = {}
+    try:
+        res['auc'] = metrics.roc_auc_score(label, predicted)
+    except:
+        res['auc'] = 'nan'
+    return res
+
+    
+def get_cohen_kappa(predicted, label):
+    res = {}
+    res['cks'] = metrics.cohen_kappa_score(predicted, label)
+    return res
+    
+
+def get_matthews_correlation(predicted, label):
+    res = {}
+    res['mcc'] = metrics.matthews_corrcoef(predicted, label)
+    return res
+
+
+def get_balanced_accuracy(predicted, label):
+    res = {}
+    res['bas'] = metrics.balanced_accuracy_score(predicted, label)
+    return res
+
+
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # precition (ppv)
 def get_score_main(matrix):
     res = {}
-    res['tpr'] = dvd(matrix[0][0], (matrix[:, 0].sum()))
-    res['ppv'] = dvd(matrix[0][0], matrix[0].sum())
+    res['ppv'] = dvd(matrix[0][0], (matrix[:, 0].sum()))
+    res['tpr'] = dvd(matrix[0][0], matrix[0].sum())
     return res
 
 
 def get_score_predicted_1(matrix):
     res = {}
-    res['tpr'] = dvd(matrix[0][0], matrix[:, 0].sum())
-    res['fpr'] = dvd(matrix[0][1], matrix[:, 1].sum())
+    res['tpr'] = dvd(matrix[0][0], matrix[0].sum())
+    res['fpr'] = dvd(matrix[1][0], matrix[1].sum())
     return res
 
 def get_score_predicted_2(matrix):
     res = {}
-    res['fnr'] = dvd(matrix[1][0], matrix[:, 0].sum())
-    res['tnr'] = dvd(matrix[1][1], matrix[:, 1].sum())
+    res['fnr'] = dvd(matrix[0][1], matrix[0].sum())
+    res['tnr'] = dvd(matrix[1][1], matrix[1].sum())
     return res
     
 # get multiple values out of a confusion matrix
@@ -105,16 +133,17 @@ def get_score_predicted(matrix):
 
 def get_score_label_1(matrix):
     res = {}
-    res['ppv'] = dvd(matrix[0][0], matrix[0].sum())
-    res['for'] = dvd(matrix[1][0], matrix[1].sum())
+    res['ppv'] = dvd(matrix[0][0], matrix[:, 0].sum())
+    res['for'] = dvd(matrix[0][1], matrix[:, 1].sum())
     return res
 
 
 def get_score_label_2(matrix):
     res = {}
-    res['fdr'] = dvd(matrix[0][1], matrix[0].sum())
-    res['npv'] = dvd(matrix[1][1], matrix[1].sum())
+    res['fdr'] = dvd(matrix[1][0], matrix[:, 0].sum())
+    res['npv'] = dvd(matrix[1][1], matrix[:, 1].sum())
     return res
+
 
 # get multiple values out of a confusion matrix
 # precision (ppv)
@@ -136,7 +165,7 @@ def get_accuracy(matrix):
 
 def get_prevalence(matrix):
     res = {}
-    res['pre'] = dvd(matrix[:, 0].sum(), matrix.sum())
+    res['pre'] = dvd(matrix[0].sum(), matrix.sum())
     return res
 
 
@@ -202,7 +231,10 @@ def get_all_score(predicted, label, matrix):
     res = {**res, **get_score_total(matrix)}
     res = {**res, **get_score_ratio(res)}
     res = {**res, **get_score_about_score(res)}
-    res['auc'] = metrics.roc_auc_score(label, predicted)
+    res = {**res, **get_roc_auc_score(predicted, label)}
+    res = {**res, **get_cohen_kappa(predicted, label)}
+    res = {**res, **get_matthews_correlation(predicted, label)}
+    res = {**res, **get_balanced_accuracy(predicted, label)}
     return res
 
 
@@ -217,7 +249,7 @@ def get_score_verbose_2(predicted, label, matrix):
     res = get_score_main(matrix)
     res = {**res, **get_score_total(matrix)}
     res = {**res, **get_score_f1(res)}
-    res['auc'] = metrics.roc_auc_score(label, predicted)
+    res = {**res, **get_roc_auc_score(predicted, label)}
     return res
 
 
@@ -313,8 +345,37 @@ def clean_layout(layout):
     layout = [[str(round(i, 3)) if isinstance(i, float) else str(i) for i in j]
               for j in layout]
     return layout
-    
 
+
+def append_verbose_3(layout, predicted, label, matrix):
+    score = get_all_score(predicted, label, matrix)
+    append_layout_col([['tpr', 'fnr', 'acc'],
+                       ['fpr', 'tnr', 'pre']],
+                      score, layout, inv=[0, 1])
+    append_layout_row([['ppv', 'for', 'f_1'],
+                       ['fdr', 'npv', 'auc'],
+                       ['lr+', 'lr-', 'dor']],
+                      score, layout, inv=[0, 1, 0])
+
+            
+def append_verbose_2(layout, predicted, label, matrix):
+    score = get_score_verbose_2(predicted, label, matrix)
+    append_layout_col([['tpr', 'acc'], ['f_1', 'pre']], score, layout)
+    append_layout_row([['ppv', 'auc']], score, layout)
+            
+
+def append_verbose_1(layout, predicted, label, matrix):
+    score = get_score_total(matrix)
+    append_layout_col([['acc'], ['pre']], score, layout)
+
+    
+def append_verbose_0(layout, predicted, label, matrix):
+    layout.append(['total', matrix[:, 0].sum(),
+                   matrix[:, 1].sum(), matrix.sum()])
+    layout[0].append('total')
+    layout[1].append(matrix[0].sum())
+    layout[2].append(matrix[1].sum())
+    
 # print a comparison of the result of a classification
 # label vs predicted
 # it will print a confusion matrix
@@ -325,32 +386,18 @@ def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
     if unique_l is None:
         unique_l = np.unique(label)[::-1]
     matrix = metrics.confusion_matrix(
-        label, predicted, labels=unique_l).transpose()
-    layout = [['pr\lb', *unique_l],
+        label, predicted, labels=unique_l)
+    layout = [['lb\pr', *unique_l],
               [unique_l[0], *matrix[0]],
               [unique_l[1], *matrix[1]]]
     if (verbose > 0):
-        layout.append(['total', matrix[:, 0].sum(),
-                       matrix[:, 1].sum(), matrix.sum()])
-        layout[0].append('total')
-        layout[1].append(matrix[0].sum())
-        layout[2].append(matrix[1].sum())
+        append_verbose_0(layout, predicted, label, matrix)
         if (verbose == 1):
-            score = get_score_total(matrix)
-            append_layout_col([['acc'], ['pre']], score, layout)
+            append_verbose_1(layout, predicted, label, matrix)    
         elif (verbose == 2):
-            score = get_score_verbose_2(predicted, label, matrix)
-            append_layout_col([['ppv', 'acc'], ['f_1', 'pre']], score, layout)
-            append_layout_row([['tpr', 'auc']], score, layout)
+            append_verbose_2(layout, predicted, label, matrix)
         elif (verbose == 3):
-            score = get_all_score(predicted, label, matrix)
-            append_layout_col([['ppv', 'fdr', 'acc'],
-                               ['for', 'npv', 'pre']],
-                              score, layout, inv=[0, 1])
-            append_layout_row([['tpr', 'fpr', 'f_1'],
-                               ['fnr', 'tnr', 'auc'],
-                               ['lr+', 'lr-', 'dor']],
-                              score, layout, inv=[0, 1, 0])
+            append_verbose_3(layout, predicted, label, matrix)
     layout = clean_layout(layout)
     if color:
         add_color_layout(layout)
@@ -401,6 +448,8 @@ def get_index_well_labeled(predicted, label):
 # mislabeled (f)
 # well labeled (t)
 def get_index_claffication(predicted, label, t_f=True):
+    predicted = np.array(predicted)
+    label = np.array(label)
     res = {}
     res['fp'] = get_index_false_positive(predicted, label)
     res['fn'] = get_index_false_negative(predicted, label)
@@ -446,6 +495,10 @@ def cross_validate(fn, data, label, k=10, **kwargs):
     datas = np.array(np.array_split(data, k))
     labels = np.array(np.array_split(label, k))
     return run_cross_validation(fn, datas, labels, **kwargs)
+
+
+def cross_validate_stratified():
+    pass
 
 
 ####
