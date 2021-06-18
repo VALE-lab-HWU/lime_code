@@ -80,8 +80,15 @@ def get_color_imgs(data):
 
 
 #
-def cut_image(data, s_col=13, e_col=118, s_row=0, e_row=128):
+def cut_image(data, s_col=13, e_col=118, s_row=0, e_row=128, size=(128, 128)):
+    data = data.reshape(size)
     return data[s_row:e_row, s_col:e_col]
+
+
+def cut_images(datas, s_col=13, e_col=118, s_row=0, e_row=128,
+               size=(128, 128)):
+    datas = datas.reshape(-1, *size)
+    return datas[:, s_row:e_row, s_col:e_col]
 
 
 #
@@ -94,3 +101,6 @@ def pad_array_to_square(data):
 #
 def pad_arrays_to_square(data):
     return transform_data(data, pad_array_to_square)
+
+
+
