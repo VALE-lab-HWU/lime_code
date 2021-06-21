@@ -298,9 +298,9 @@ def make_label_from_dict_and_group(label_to_group, groups, dict_idx,
     array_groups = np.array(make_label_from_group(label_to_group, groups,
                                                   label_groups),
                             dtype=object)
-    group_dict = make_label_from_dict_index(dict_idx,
-                                            len(array_groups[array_groups == keys_idx]))
-    array_groups[array_groups == keys_idx] = group_dict
+    gr_dict = make_label_from_dict_index(
+        dict_idx, sum(array_groups == keys_idx))
+    array_groups[array_groups == keys_idx] = gr_dict
     return array_groups
 
 
@@ -354,11 +354,11 @@ def my_plot_dendrogram(dcoords, icoords, color_leaves, color_branch, leaves,
                      ((ic0[j][3] + ic0[j][0])/2, dc0[j][k3])]]
             if dc0[j][k] == 0:
                 col = matplotlib.collections.LineCollection(
-                    link, colors=(color_leaves[leaves[i]]))
+                    link, colors=(color_leaves[leaves[i]]), linewidths=1.3)
                 i += 1
             else:
                 col = matplotlib.collections.LineCollection(
-                    link, colors=(color_branch_0[j]))
+                    link, colors=(color_branch_0[j]), linewidths=1.3)
             ax.add_collection(col)
 
 
@@ -377,36 +377,55 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
     linkage_mat = make_linkage_matrix(dendogram_full)
     # color dendrogram label
     plot_dendrogram_from_matrix(linkage_mat, np.concatenate((y_train, y_test)))
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'label_dendrogram.png')
+    plt.clf()
     # color dendrogram patient
     plot_dendrogram_from_matrix(linkage_mat, patient)
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'patient_dendrogram.png')
+    plt.clf()
     # color dendrogram train test
     plot_dendrogram_from_matrix(linkage_mat,
                                 make_label_from_group(
                                     patient, [p_train, p_test],
                                     label_groups=['train', 'test']))
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'train_test_dendrogram.png')
+    plt.clf()
     # color dendrogram result classification
     plot_dendrogram_from_matrix(linkage_mat,
                                 make_label_from_dict_and_group(
                                     patient, [p_train, p_test], index_cl,
                                     label_groups=['train', 'test']))
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'classification_dendrogram.png')
+    plt.clf()
     # dendrogram testing
     dendogram_test = mh.fit_dendrogram(x_test)
     linkage_mat = make_linkage_matrix(dendogram_test)
     # color dendrogram label
-    plot_dendrogram_from_matrix(linkage_mat, np.concatenate((y_train, y_test)))
+    plot_dendrogram_from_matrix(linkage_mat,  y_test)
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'label_dendrogram_test.png')
+    plt.clf()
     # color dendrogram result classification
     plot_dendrogram_from_matrix(linkage_mat,
                                 make_label_from_dict_index(
                                     index_cl, len(x_test)))
+    fig = plt.gcf()
+    fig.set_size_inches(12.8, 7.2)
     plt.savefig(folder+'classification_dendrogram_test.png')
+    plt.clf()
 
 
-def group_measure(x_train, x_test, patient, data_cl, folder='./result/'):
+def group_measure(x_train, x_test, patient, data_cl, folder='./result/',
+                  title='measures.csv'):
     measure_all = pd.Series(get_measure(np.concatenate((x_train, x_test))),
                             name='all')
     measure_train = pd.Series(get_measure(x_train), name='train')
@@ -417,7 +436,7 @@ def group_measure(x_train, x_test, patient, data_cl, folder='./result/'):
     measures = pd.concat((measure_all, measure_train, measure_test,
                           measure_per_patient, measure_classification),
                          axis=1).transpose()
-    measures.to_csv(folder+'measures.csv')
+    measures.to_csv(folder+title)
 
 
 def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
@@ -425,7 +444,6 @@ def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
     group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                      patient, p_train, p_test, folder=folder)
     # kmeans
-    # metrics
     group_measure(x_train, x_test, patient, data_cl, folder=folder)
     # lime
     pass
