@@ -9,7 +9,9 @@ import scipy.cluster.hierarchy as hierarchy
 import ml_helper as mlh
 import model_helper as mh
 
-N_BINS = 128
+N_BINS = 218
+X_SIZE = 12.8
+Y_SIZE = 7.2
 
 
 ####
@@ -21,7 +23,8 @@ def build_histogram(data, n_range=None, n_bins=N_BINS):
     return fig, axs
 
 
-def save_histogram(data, title, n_range=None, n_bins=N_BINS):
+def save_histogram(data, title, n_range=None, n_bins=N_BINS,
+                   x_size=X_SIZE, y_size=Y_SIZE):
     if n_bins is None:
         if (len(data)) == 0:
             n_bins = 1
@@ -33,6 +36,7 @@ def save_histogram(data, title, n_range=None, n_bins=N_BINS):
         n_bins = 100
     print(n_bins)
     fig, raxs = build_histogram(data.reshape(-1), n_range, int(n_bins))
+    fig.set_size_inches(x_size, y_size)
     plt.savefig(title + ".png")
     plt.close('all')
 
@@ -42,12 +46,24 @@ def plot_histogram(data, title, n_range=None, n_bins=N_BINS):
     plt.show(block=False)
 
 
+def save_histo_and_correct(data, title, n_range=None, n_bins=N_BINS,
+                           x_size=X_SIZE, y_size=Y_SIZE):
+    save_histogram(data, title, n_range=n_range, n_bins=n_bins,
+                   x_size=x_size, y_size=y_size)
+    data = remove_over_represented_data(data)
+    title = title + '_corrected'
+    save_histogram(data, title, n_range=n_range, n_bins=n_bins,
+                   x_size=x_size, y_size=y_size)
+
+
 # not really used
 def save_histogram_per_classification(
-        data, index_cl, title, n_range=None, n_bins=N_BINS):
-    save_histogram(data, title + ' full', n_range, n_bins)
+        data, index_cl, title, n_range=None, n_bins=N_BINS,
+        x_size=X_SIZE, y_size=Y_SIZE):
+    save_histogram(data, title + '_full', n_range, n_bins)
     for i in index_cl:
-        save_histogram(data[index_cl[i]], title+' '+i, n_range, n_bins)
+        save_histogram(data[index_cl[i]], title+' '+i, n_range, n_bins,
+                       x_size=x_size, y_size=y_size)
 
 
 def remove_over_represented_data(data):
@@ -59,22 +75,29 @@ def get_data_per_classification(data, index_cl):
     return {i: data[index_cl[i]] for i in index_cl}
 
 
-def save_histogram_per_data(datas, title, n_range=None, n_bins=218):
+def save_histogram_per_data(datas, title, n_range=None, n_bins=N_BINS,
+                            x_size=X_SIZE, y_size=Y_SIZE):
     for i in datas:
-        save_histogram(datas[i], title+'_'+i, n_range, n_bins)
+        save_histogram(datas[i], title+'_'+i, n_range, n_bins,
+                       x_size=x_size, y_size=y_size)
 
 
-def save_all_histogram_all_data(data, data_cl, title_):
-    title = title_ + 'all'
+def save_all_histogram_all_data(data, data_cl, title_,
+                                x_size=X_SIZE, y_size=Y_SIZE):
+    title = title_ + '_all'
     n_range = None
-    n_bins = 226
-    save_histogram(data, title+'_full', n_range, n_bins)
-    save_histogram_per_data(data_cl, title, n_range, n_bins)
+    n_bins = None
+    save_histogram(data, title+'_full', n_range, n_bins,
+                   x_size=x_size, y_size=y_size)
+    save_histogram_per_data(data_cl, title, n_range, n_bins,
+                            x_size=x_size, y_size=y_size)
     data = remove_over_represented_data(data)
-    title = title_ + 'corrected'
-    save_histogram(data, title+'_full', n_range, n_bins)
+    title = title_ + '_corrected'
+    save_histogram(data, title+'_full', n_range, n_bins,
+                   x_size=x_size, y_size=y_size)
     data_cl = {i: remove_over_represented_data(data_cl[i]) for i in data_cl}
-    save_histogram_per_data(data_cl, title, n_range, n_bins)
+    save_histogram_per_data(data_cl, title, n_range, n_bins,
+                            x_size=x_size, y_size=y_size)
 
 
 ####
@@ -371,9 +394,10 @@ def calculateDistance(i1, i2):
 # group
 ####
 def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
-                     patient, p_train, p_test, folder='./result/'):
+                     patient, p_train, p_test, data, label,
+                     folder='./result/'):
     # dendrogram of all dataset
-    dendogram_full = mh.fit_dendrogram(np.concatenate((x_train, x_test)))
+    dendogram_full = mh.fit_dendrogram(data)
     linkage_mat = make_linkage_matrix(dendogram_full)
     # color dendrogram label
     plot_dendrogram_from_matrix(linkage_mat, np.concatenate((y_train, y_test)))
@@ -424,14 +448,14 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
     plt.clf()
 
 
-def group_measure(x_train, x_test, patient, data_cl, folder='./result/',
+def group_measure(x_train, x_test, patient, data_cl, data,  folder='./result/',
                   title='measures.csv'):
-    measure_all = pd.Series(get_measure(np.concatenate((x_train, x_test))),
+    measure_all = pd.Series(get_measure(data),
                             name='all')
     measure_train = pd.Series(get_measure(x_train), name='train')
     measure_test = pd.Series(get_measure(x_test), name='test')
     measure_per_patient = pd.DataFrame(get_measure_patients(
-        np.concatenate((x_train, x_test)), patient))
+        data, patient))
     measure_classification = pd.DataFrame(get_measure_all_cl(data_cl))
     measures = pd.concat((measure_all, measure_train, measure_test,
                           measure_per_patient, measure_classification),
@@ -439,11 +463,24 @@ def group_measure(x_train, x_test, patient, data_cl, folder='./result/',
     measures.to_csv(folder+title)
 
 
+def group_histogram(x_train, x_test, data_cl, data, label, folder='/result/'):
+    title = folder+'graph_explain'
+    save_all_histogram_all_data(x_test, data_cl, title+'_test')
+    save_histo_and_correct(x_train, title+'_train')
+    save_histo_and_correct(x_test, title+'_test')
+    save_histo_and_correct(data[label == 0], title+'_false')
+    save_histo_and_correct(data[label == 1], title+'_true')
+
+
 def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
           p_train, p_test, k=4, folder='./result/'):
+    # save comput
+    data = np.concatenate((x_train, x_test))
+    label = np.concatenate((y_train, y_test))
+    # histo
+    group_histogram(x_train, x_test, data_cl, data, label, folder=folder)
     group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
-                     patient, p_train, p_test, folder=folder)
+                     patient, p_train, p_test, data, label, folder=folder)
     # kmeans
-    group_measure(x_train, x_test, patient, data_cl, folder=folder)
+    group_measure(x_train, x_test, patient, data_cl, data, folder=folder)
     # lime
-    pass
