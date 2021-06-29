@@ -34,7 +34,8 @@ def transform_data(data, fn):
 # output: 3d array, row/row of row are of size sqrt(X)
 def reshape_imgs(data):
     dim = int(len(data[0]) ** (1/2))
-    return transform_data(data, lambda d: np.reshape(d, (dim, dim, -1)))
+    shape = (dim, dim, *data[0].shape[1:])
+    return transform_data(data, lambda d: np.reshape(d, shape))
 
 
 # flatten each element of data
