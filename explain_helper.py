@@ -8,6 +8,8 @@ from scipy.cluster.hierarchy import dendrogram
 import scipy.cluster.hierarchy as hierarchy
 import ml_helper as mlh
 import model_helper as mh
+import lime_helper as lh
+
 
 N_BINS = 218
 X_SIZE = 12.8
@@ -130,7 +132,8 @@ def print_measure(measure):
 def get_measure_all_cl(data_cl):
     res = {}
     for i in data_cl:
-        res[i] = get_measure(data_cl[i])
+        if len(data_cl[i]) > 0:
+            res[i] = get_measure(data_cl[i])
     return res
 
 
@@ -403,13 +406,13 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
     plot_dendrogram_from_matrix(linkage_mat, np.concatenate((y_train, y_test)))
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'label_dendrogram.png')
+    plt.savefig(folder+'dendrogram_label.png')
     plt.clf()
     # color dendrogram patient
     plot_dendrogram_from_matrix(linkage_mat, patient)
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'patient_dendrogram.png')
+    plt.savefig(folder+'dendrogram_patient.png')
     plt.clf()
     # color dendrogram train test
     plot_dendrogram_from_matrix(linkage_mat,
@@ -418,7 +421,7 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                                     label_groups=['train', 'test']))
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'train_test_dendrogram.png')
+    plt.savefig(folder+'dendrogram_train_test.png')
     plt.clf()
     # color dendrogram result classification
     plot_dendrogram_from_matrix(linkage_mat,
@@ -427,7 +430,7 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                                     label_groups=['train', 'test']))
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'classification_dendrogram.png')
+    plt.savefig(folder+'dendrogram_classification.png')
     plt.clf()
     # dendrogram testing
     dendogram_test = mh.fit_dendrogram(x_test)
@@ -436,7 +439,7 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
     plot_dendrogram_from_matrix(linkage_mat,  y_test)
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'label_dendrogram_test.png')
+    plt.savefig(folder+'dendrogram_test_label.png')
     plt.clf()
     # color dendrogram result classification
     plot_dendrogram_from_matrix(linkage_mat,
@@ -444,7 +447,7 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                                     index_cl, len(x_test)))
     fig = plt.gcf()
     fig.set_size_inches(12.8, 7.2)
-    plt.savefig(folder+'classification_dendrogram_test.png')
+    plt.savefig(folder+'dendrogram_test_classification.png')
     plt.clf()
 
 
@@ -472,15 +475,57 @@ def group_histogram(x_train, x_test, data_cl, data, label, folder='/result/'):
     save_histo_and_correct(data[label == 1], title+'_true')
 
 
+def group_kmeans_one(data, title,  k=3, folder='./result/'):
+    if len(data) > 0:
+        mdl = mh.build_kmeans_model(n_clusters=min(k, len(data)))
+        mdl.fit(data)
+        measures = []
+        for i in range(mdl.n_clusters):
+            tmp = data[mdl.labels_ == i]
+            measures.append(pd.Series(get_measure(tmp), name=f'{title}_{i}'))
+            save_histo_and_correct(tmp, folder+f'histo_{title}_{i}')
+        measures = pd.concat(measures, axis=1).transpose()
+        measures.to_csv(folder+f'measures_{title}_classification.csv')
+        return mdl.labels_
+    else:
+        return []
+
+
+def group_kmeans(data_cl, k=3, folder='./result/'):
+    lb_fn = group_kmeans_one(data_cl['fn'], 'fn', k=k, folder=folder)
+    lb_fp = group_kmeans_one(data_cl['fp'], 'fp', k=k, folder=folder)
+    return lb_fn, lb_fp
+
+
 def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
-          p_train, p_test, k=4, folder='./result/'):
+          p_train, p_test, clf,  k=3, folder='./result/'):
     # save comput
     data = np.concatenate((x_train, x_test))
     label = np.concatenate((y_train, y_test))
-    # histo
     group_histogram(x_train, x_test, data_cl, data, label, folder=folder)
     group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                      patient, p_train, p_test, data, label, folder=folder)
-    # kmeans
     group_measure(x_train, x_test, patient, data_cl, data, folder=folder)
-    # lime
+    lb_fn, lb_fp = group_kmeans(data_cl, folder=folder)
+    exp, seg = lh.get_explainer()
+    pip_color = mlh.build_pipeline_to_color()
+    for i in range(k):
+        print(f'i:{i}')
+        tmp_fn = lb_fn == i
+        tmp_fp = lb_fp == i
+        for j in range(min(3, tmp_fn.sum())):
+            print(f'j1:{j}')
+            explanation = exp.explain_instance(
+                pip_color.transform([data_cl['fn'][tmp_fn][j]])[0],
+                classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
+                top_labels=2, hide_color=0)
+            f = lh.visualize_explanation(explanation, 0)
+            f.savefig(folder+f'lime_fn_lb{i}_n{j}')
+        for j in range(min(3, tmp_fp.sum())):
+            print(f'j2:{j}')
+            explanation = exp.explain_instance(
+                pip_color.transform([data_cl['fp'][tmp_fp][j]])[0],
+                classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
+                top_labels=2, hide_color=0)
+            f = lh.visualize_explanation(explanation, 1)
+            f.savefig(folder+f'lime_fp_lb{i}_n{j}')
