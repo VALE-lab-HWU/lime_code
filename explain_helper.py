@@ -451,6 +451,23 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
     plt.clf()
 
 
+def group_measure_groups_one(lb, title, data_cl, k=3, folder='./result/'):
+    measures = []
+    for i in range(len(np.unique(lb))):
+        tmp_fn = lb == i
+        measure = pd.Series(get_measure(data_cl[title][tmp_fn]),
+                            name=f'{title}_{i}')
+        measures.append(measure)
+    measures = pd.concat(measures,
+                         axis=1).transpose()
+    measures.to_csv(folder+f'measures_groups_{title}.csv')
+
+
+def group_measure_groups(lb_fn, lb_fp, data_cl, k=3, folder='./result/'):
+    group_measure_groups_one(lb_fn, 'fn', data_cl, k=k, folder=folder)
+    group_measure_groups_one(lb_fp, 'fp', data_cl, k=k, folder=folder)
+
+
 def group_measure(x_train, x_test, patient, data_cl, data,  folder='./result/',
                   title='measures.csv'):
     measure_all = pd.Series(get_measure(data),
@@ -497,6 +514,30 @@ def group_kmeans(data_cl, k=3, folder='./result/'):
     return lb_fn, lb_fp
 
 
+def group_lime_one(lb, title, i,  exp, seg, pip_color, data_cl, clf,
+                   folder='./result/'):
+    tmp = lb == i
+    for j in range(min(3, tmp.sum())):
+        print(f'j1:{j}')
+        explanation = exp.explain_instance(
+            pip_color.transform([data_cl[title][tmp][j]])[0],
+            classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
+            top_labels=2, hide_color=0)
+        f = lh.visualize_explanation(explanation, 0)
+        f.savefig(folder+f'lime_{title}_lb{i}_n{j}')
+
+
+def group_lime(lb_fn, lb_fp, data_cl, clf, k=3, folder='./result/'):
+    exp, seg = lh.get_explainer()
+    pip_color = mlh.build_pipeline_to_color()
+    for i in range(k):
+        print(f'i:{i}')
+        group_lime_one(lb_fn, 'fn', i, exp, seg, pip_color, data_cl, clf,
+                       folder=folder)
+        group_lime_one(lb_fp, 'fp', i, exp, seg, pip_color, data_cl, clf,
+                       folder=folder)
+
+
 def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
           p_train, p_test, clf,  k=3, folder='./result/'):
     # save comput
@@ -507,25 +548,6 @@ def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
                      patient, p_train, p_test, data, label, folder=folder)
     group_measure(x_train, x_test, patient, data_cl, data, folder=folder)
     lb_fn, lb_fp = group_kmeans(data_cl, folder=folder)
-    exp, seg = lh.get_explainer()
-    pip_color = mlh.build_pipeline_to_color()
-    for i in range(k):
-        print(f'i:{i}')
-        tmp_fn = lb_fn == i
-        tmp_fp = lb_fp == i
-        for j in range(min(3, tmp_fn.sum())):
-            print(f'j1:{j}')
-            explanation = exp.explain_instance(
-                pip_color.transform([data_cl['fn'][tmp_fn][j]])[0],
-                classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
-                top_labels=2, hide_color=0)
-            f = lh.visualize_explanation(explanation, 0)
-            f.savefig(folder+f'lime_fn_lb{i}_n{j}')
-        for j in range(min(3, tmp_fp.sum())):
-            print(f'j2:{j}')
-            explanation = exp.explain_instance(
-                pip_color.transform([data_cl['fp'][tmp_fp][j]])[0],
-                classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
-                top_labels=2, hide_color=0)
-            f = lh.visualize_explanation(explanation, 1)
-            f.savefig(folder+f'lime_fp_lb{i}_n{j}')
+    group_measure_groups(lb_fn, lb_fp, data_cl, k=k, folder=folder)
+    group_lime(lb_fn, lb_fp, data_cl, clf, k=k, folder=folder)
+
