@@ -2,9 +2,10 @@ import numpy as np
 from bcolors import Bcolors as bc
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from copy import deepcopy
 import process_helper as ph
 import re
 ####
@@ -63,7 +64,7 @@ def print_matrix(layout, L=8):
         print_line_matrix(len_l, L)
 
 
-def dvd(a,b):
+def dvd(a, b):
     if b == 0:
         return float('inf')
     else:
@@ -74,16 +75,16 @@ def get_roc_auc_score(predicted, label):
     res = {}
     try:
         res['auc'] = metrics.roc_auc_score(label, predicted)
-    except:
+    except:  # bare except bad, todo (yeah I know)
         res['auc'] = 'nan'
     return res
 
-    
+
 def get_cohen_kappa(predicted, label):
     res = {}
     res['cks'] = metrics.cohen_kappa_score(predicted, label)
     return res
-    
+
 
 def get_matthews_correlation(predicted, label):
     res = {}
@@ -113,12 +114,14 @@ def get_score_predicted_1(matrix):
     res['fpr'] = dvd(matrix[1][0], matrix[1].sum())
     return res
 
+
 def get_score_predicted_2(matrix):
     res = {}
     res['fnr'] = dvd(matrix[0][1], matrix[0].sum())
     res['tnr'] = dvd(matrix[1][1], matrix[1].sum())
     return res
-    
+
+
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # fall-out  (fpr)
@@ -196,7 +199,7 @@ def get_score_f1(score):
     if denom == 0:
         res['f_1'] = 0
     else:
-        res['f_1'] = 2.0 *  (score['ppv'] * score['tpr']) / denom
+        res['f_1'] = 2.0 * (score['ppv'] * score['tpr']) / denom
     return res
 
 
@@ -357,25 +360,26 @@ def append_verbose_3(layout, predicted, label, matrix):
                        ['lr+', 'lr-', 'dor']],
                       score, layout, inv=[0, 1, 0])
 
-            
+
 def append_verbose_2(layout, predicted, label, matrix):
     score = get_score_verbose_2(predicted, label, matrix)
     append_layout_col([['tpr', 'acc'], ['f_1', 'pre']], score, layout)
     append_layout_row([['ppv', 'auc']], score, layout)
-            
+
 
 def append_verbose_1(layout, predicted, label, matrix):
     score = get_score_total(matrix)
     append_layout_col([['acc'], ['pre']], score, layout)
 
-    
+
 def append_verbose_0(layout, predicted, label, matrix):
     layout.append(['total', matrix[:, 0].sum(),
                    matrix[:, 1].sum(), matrix.sum()])
     layout[0].append('total')
     layout[1].append(matrix[0].sum())
     layout[2].append(matrix[1].sum())
-    
+
+
 # print a comparison of the result of a classification
 # label vs predicted
 # it will print a confusion matrix
@@ -393,7 +397,7 @@ def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
     if (verbose > 0):
         append_verbose_0(layout, predicted, label, matrix)
         if (verbose == 1):
-            append_verbose_1(layout, predicted, label, matrix)    
+            append_verbose_1(layout, predicted, label, matrix)
         elif (verbose == 2):
             append_verbose_2(layout, predicted, label, matrix)
         elif (verbose == 3):
@@ -477,9 +481,12 @@ def run_cross_validation(fn, datas, labels, shuffle=False, **kwargs):
     res = []
     for i in range(len(datas)):
         print('fold %d' % i)
-        x_train = np.concatenate(np.concatenate((datas[:i], datas[i+1:]), dtype=object), dtype=float)
-        y_train = np.concatenate(np.concatenate((labels[:i],
-                                                 labels[i+1:]), dtype=object), dtype=int)
+        x_train = np.concatenate(
+            np.concatenate((datas[:i], datas[i+1:]), dtype=object),
+            dtype=float)
+        y_train = np.concatenate(
+            np.concatenate((labels[:i], labels[i+1:]), dtype=object),
+            dtype=int)
         if shuffle:
             x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
         x_test = datas[i]
@@ -497,8 +504,17 @@ def cross_validate(fn, data, label, k=10, **kwargs):
     return run_cross_validation(fn, datas, labels, **kwargs)
 
 
-def cross_validate_stratified():
-    pass
+def cross_validate_stratified(fn, data, label, patient, k=10, **kwargs):
+    pp = deepcopy(patient)
+    for i in np.unique(patient):
+        pp[pp == i] += label[pp == i].astype(str)
+    skf = StratifiedKFold(n_splits=k)
+    res = []
+    for train_index, test_index in skf.split(data, pp):
+        predicted = fn(data[train_index], label[train_index],
+                       data[test_index], **kwargs)
+        res.append((predicted, label[test_index]))
+    return res
 
 
 ####
@@ -545,6 +561,7 @@ def run_train_and_test_patient(
 # from lime tutorial
 def identity(x):
     return x
+
 
 class PipeStep(object):
     """
@@ -637,6 +654,7 @@ def build_pipline_gray_clasify(model, model_kwargs={}):
         ('Gray Img ', step1),
         ('Fit Img', step2)
     ])
+
 
 # doesn't work
 def build_pipeline_pca_rgb(pipeline_kwargs={}):
