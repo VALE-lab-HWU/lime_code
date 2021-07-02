@@ -458,14 +458,13 @@ def group_measure_groups_one(lb, title, data_cl, k=3, folder='./result/'):
         measure = pd.Series(get_measure(data_cl[title][tmp_fn]),
                             name=f'{title}_{i}')
         measures.append(measure)
-    measures = pd.concat(measures,
-                         axis=1).transpose()
-    measures.to_csv(folder+f'measures_groups_{title}.csv')
+    return measures
 
 
 def group_measure_groups(lb_fn, lb_fp, data_cl, k=3, folder='./result/'):
-    group_measure_groups_one(lb_fn, 'fn', data_cl, k=k, folder=folder)
-    group_measure_groups_one(lb_fp, 'fp', data_cl, k=k, folder=folder)
+    m1 = group_measure_groups_one(lb_fn, 'fn', data_cl, k=k, folder=folder)
+    m2 = group_measure_groups_one(lb_fp, 'fp', data_cl, k=k, folder=folder)
+    return [*m1, *m2]
 
 
 def group_measure(x_train, x_test, patient, data_cl, data,  folder='./result/',
@@ -477,10 +476,9 @@ def group_measure(x_train, x_test, patient, data_cl, data,  folder='./result/',
     measure_per_patient = pd.DataFrame(get_measure_patients(
         data, patient))
     measure_classification = pd.DataFrame(get_measure_all_cl(data_cl))
-    measures = pd.concat((measure_all, measure_train, measure_test,
-                          measure_per_patient, measure_classification),
-                         axis=1).transpose()
-    measures.to_csv(folder+title)
+    measures = [measure_all, measure_train, measure_test,
+                measure_per_patient, measure_classification]
+    return measures
 
 
 def group_histogram(x_train, x_test, data_cl, data, label, folder='/result/'):
@@ -496,13 +494,6 @@ def group_kmeans_one(data, title,  k=3, folder='./result/'):
     if len(data) > 0:
         mdl = mh.build_kmeans_model(n_clusters=min(k, len(data)))
         mdl.fit(data)
-        measures = []
-        for i in range(mdl.n_clusters):
-            tmp = data[mdl.labels_ == i]
-            measures.append(pd.Series(get_measure(tmp), name=f'{title}_{i}'))
-            save_histo_and_correct(tmp, folder+f'histo_{title}_{i}')
-        measures = pd.concat(measures, axis=1).transpose()
-        measures.to_csv(folder+f'measures_{title}_classification.csv')
         return mdl.labels_
     else:
         return []
@@ -521,7 +512,7 @@ def group_lime_one(lb, title, i,  exp, seg, pip_color, data_cl, clf,
         print(f'j1:{j}')
         explanation = exp.explain_instance(
             pip_color.transform([data_cl[title][tmp][j]])[0],
-            classifier_fn=clf, segmentation_fn=seg, num_samples=1000,
+            classifier_fn=clf, segmentation_fn=seg, num_samples=5000,
             top_labels=2, hide_color=0)
         f = lh.visualize_explanation(explanation, 0)
         f.savefig(folder+f'lime_{title}_lb{i}_n{j}')
@@ -546,8 +537,9 @@ def group(x_train, y_train, x_test, y_test, data_cl, index_cl, patient,
     group_histogram(x_train, x_test, data_cl, data, label, folder=folder)
     group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                      patient, p_train, p_test, data, label, folder=folder)
-    group_measure(x_train, x_test, patient, data_cl, data, folder=folder)
+    m = group_measure(x_train, x_test, patient, data_cl, data, folder=folder)
     lb_fn, lb_fp = group_kmeans(data_cl, folder=folder)
-    group_measure_groups(lb_fn, lb_fp, data_cl, k=k, folder=folder)
+    m2 = group_measure_groups(lb_fn, lb_fp, data_cl, k=k, folder=folder)
+    measures = pd.concat([*m, *m2], axis=1).transpose()
+    measures.to_csv(folder + 'measures.csv')
     group_lime(lb_fn, lb_fp, data_cl, clf, k=k, folder=folder)
-
