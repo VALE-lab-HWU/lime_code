@@ -3,6 +3,7 @@ import matplotlib.lines as mpline
 import matplotlib
 import pandas as pd
 import numpy as np
+import pickle
 from scipy import stats
 from scipy.cluster.hierarchy import dendrogram
 import scipy.cluster.hierarchy as hierarchy
@@ -107,6 +108,7 @@ def save_all_histogram_all_data(data, data_cl, title_,
 ####
 def get_measure(data, axis=None):
     res = {}
+    res['eff'] = len(data)
     res['min'] = data.min(axis=axis)
     res['avg'] = data.mean(axis=axis)
     res['max'] = data.max(axis=axis)
@@ -400,8 +402,10 @@ def group_dendrogram(x_train, y_train, x_test, y_test, index_cl,
                      patient, p_train, p_test, data, label,
                      folder='./result/'):
     # dendrogram of all dataset
-    dendogram_full = mh.fit_dendrogram(data)
-    linkage_mat = make_linkage_matrix(dendogram_full)
+    # dendrogram_full = mh.fit_dendrogram(data)
+    with open('./model/hierarchi_not_last_full.pkl', 'rb') as f:
+        dendrogram_full = pickle.load(f)
+    linkage_mat = make_linkage_matrix(dendrogram_full)
     # color dendrogram label
     plot_dendrogram_from_matrix(linkage_mat, np.concatenate((y_train, y_test)))
     fig = plt.gcf()
