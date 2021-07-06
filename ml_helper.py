@@ -408,6 +408,13 @@ def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
     print_matrix(layout, L)
 
 
+def compare_per_patient(predicted, label, p_test, i_test,
+                        verbose=1, color=True, L=8, unique_l=None):
+    for i in p_test:
+        compare_class(predicted[i_test == i], label[i_test == i],
+                      verbose=verbose, color=color, L=L, unique_l=unique_l)
+
+
 # get all index where the label and the predicted value are equals to a tuple
 def get_index_label_tpl(predicted, label, tpl):
     res = np.nonzero(np.logical_and((predicted == tpl[0]), (label == tpl[1])))
@@ -471,6 +478,18 @@ def shuffle_arrays_of_array(*arrays):
     return [array[perm] for array in arrays]
 
 
+def get_subset_patient(data, label, patient, p_idx):
+    datas = []
+    lbs = []
+    for i in p_idx.values():
+        tmp = patient == i
+        datas.append(data[tmp])
+        lbs.append(label[tmp])
+    datas = np.array(datas, dtype=object)
+    lbs = np.array(lbs, dtype=object)
+    return datas, lbs
+
+
 ####
 # Cross Validation
 ####
@@ -482,10 +501,10 @@ def run_cross_validation(fn, datas, labels, shuffle=False, **kwargs):
     for i in range(len(datas)):
         print('fold %d' % i)
         x_train = np.concatenate(
-            np.concatenate((datas[:i], datas[i+1:]), dtype=object),
+            np.concatenate((datas[:i], datas[i+1:])),
             dtype=float)
         y_train = np.concatenate(
-            np.concatenate((labels[:i], labels[i+1:]), dtype=object),
+            np.concatenate((labels[:i], labels[i+1:])),
             dtype=int)
         if shuffle:
             x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
@@ -510,10 +529,13 @@ def cross_validate_stratified(fn, data, label, patient, k=10, **kwargs):
         pp[pp == i] += label[pp == i].astype(str)
     skf = StratifiedKFold(n_splits=k)
     res = []
+    i = 0
     for train_index, test_index in skf.split(data, pp):
+        print('fold %d' % i)
         predicted = fn(data[train_index], label[train_index],
                        data[test_index], **kwargs)
         res.append((predicted, label[test_index]))
+        i += 1
     return res
 
 
