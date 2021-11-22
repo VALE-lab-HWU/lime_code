@@ -12,7 +12,7 @@ import model_helper as mh
 import lime_helper as lh
 
 
-N_BINS = 218
+N_BINS = 100
 X_SIZE = 12.8
 Y_SIZE = 7.2
 
@@ -30,11 +30,13 @@ def save_histogram(data, title, n_range=None, n_bins=N_BINS,
                    x_size=X_SIZE, y_size=Y_SIZE):
     if n_bins is None:
         if (len(data)) == 0:
-            n_bins = 1
+            n_bins = 100
         else:
             n_bins = int(data.max() - data.min())
-    if n_bins < 10:
-        n_bins *= 20
+            if n_bins < 10:
+                n_bins *= 20
+    if n_bins <= 20:
+        n_bins = 100
     if n_bins == 0:
         n_bins = 100
     print(n_bins)
@@ -89,7 +91,7 @@ def save_all_histogram_all_data(data, data_cl, title_,
                                 x_size=X_SIZE, y_size=Y_SIZE):
     title = title_ + '_all'
     n_range = None
-    n_bins = None
+    n_bins = 100
     save_histogram(data, title+'_full', n_range, n_bins,
                    x_size=x_size, y_size=y_size)
     save_histogram_per_data(data_cl, title, n_range, n_bins,

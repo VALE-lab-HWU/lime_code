@@ -25,6 +25,13 @@ def build_img_explainer(ax, explanation, label, title, **kwargs):
     ax.set_title('{} {}'.format(title, label))
 
 
+def explain(exp, seg, clf, data, num_samples=5000, top_labels=2, hide_color=0):
+    explanation = exp.explain_instance(
+        data, classifier_fn=clf, segmentation_fn=seg, num_samples=num_samples,
+        top_labels=top_labels, hide_color=hide_color)
+    return explanation
+
+
 # vizualize an explanation
 # take an explanation from lime and the label
 def visualize_explanation(explanation, label):

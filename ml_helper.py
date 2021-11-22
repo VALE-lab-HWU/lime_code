@@ -496,7 +496,9 @@ def get_subset_patient(data, label, patient, p_idx):
 # run a cross valisation, using fn as classifier
 # datas and label are array of data/label
 # each element of data/label will be a fold
-def run_cross_validation(fn, datas, labels, shuffle=False, **kwargs):
+def run_cross_validation(fn, datas, labels,
+                         shuffle=False, save_model=False, **kwargs):
+    print(kwargs)
     res = []
     for i in range(len(datas)):
         print('fold %d' % i)
@@ -510,8 +512,13 @@ def run_cross_validation(fn, datas, labels, shuffle=False, **kwargs):
             x_train, y_train = shuffle_arrays_of_array(x_train, y_train)
         x_test = datas[i]
         y_test = np.array(labels[i], dtype=int)
-        predicted = fn(x_train, y_train, x_test, **kwargs)
-        res.append((predicted, y_test))
+        # if save_model = True, predicted is a tuple with the model as [1]
+        predicted = fn(x_train, y_train, x_test,
+                       save_model=save_model, **kwargs)
+        if save_model:
+            res.append((predicted[0], y_test, predicted[1]))
+        else:
+            res.append((predicted, y_test))
     return res
 
 
@@ -668,8 +675,17 @@ def build_pipeline_classify(model, model_kwargs={}, pipeline_kwargs={}):
     ])
 
 
+def build_pipeline_pca_model(model, model_kwargs={}, pipeline_kwargs={}):
+    step1 = build_pipeline_pca_scale(**pipeline_kwargs)
+    step2 = model(**model_kwargs)
+    return Pipeline([
+        ('Process PCA', step1),
+        ('Fit Img', step2)
+    ])
+
+
 # doesn't work
-def build_pipline_gray_clasify(model, model_kwargs={}):
+def build_pipeline_gray_clasify(model, model_kwargs={}):
     step1 = build_pipeline_to_gray()
     step2 = model(**model_kwargs)
     return Pipeline([

@@ -5,9 +5,14 @@ import os
 
 PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
-FILENAME_SMALL = 'cleaned_3000_patient.pickle'
-FILENAME_MEDIUM = 'cleaned_10000_patient.pickle'
-FILENAME_MINI = 'cleaned_150_patient.pickle'
+
+PATH_CLEANED = PATH +  '/cleaned'
+FILE_PREFIX = 'band_cleaned_'
+FILE_SUFFIX = '_all_patient.pickle'
+FILEMAIN = 'MDCEBL'
+
+FILENAME = FILE_PREFIX + FILEMAIN + FILE_SUFFIX
+
 
 # read the data in the file located at the filepath
 # dic is an option because some pickle file, when loaded, are inside dic
@@ -45,8 +50,8 @@ def read_all_data(path=PATH, subfolder=True):
                         data['patient'] = files[:8]
                         res.append(data)
         else:
-            if folder[-7:] == '.pickle':
-                data = read_data_pickle(path+'/'+folder, True)
+            if folder[-7:] == '.pickle' and folder[0] == '2':
+                data = read_data_pickle(path+'/'+folder, False)
                 data['patient'] = folder[:8]
                 res.append(data)
     return res
@@ -55,7 +60,7 @@ def read_all_data(path=PATH, subfolder=True):
 # read all the pickle files and concat them in one DataFrame
 def concat_data(path=PATH, subfolder=True):
     data = read_all_data(path, subfolder)
-    res = pd.concat(data)
+    res = pd.concat(data, ignore_index=True)
     return res
 
 
@@ -76,14 +81,24 @@ def intensity_of_data(data):
     return data[data.columns[17:16401]]
 
 
-# extract the label from a dataframe
-def extract_label(data):
-    return data['tissue_classification'].to_numpy().astype(int)
+def extract_informative_feature(data, feature):
+    return data[feature].to_numpy()
 
 
 # extract the patient from a dataframe
 def extract_patient(data):
-    return data['patient'].to_numpy()
+    return extract_informative_feature(data, 'patient')
+
+
+# extract the band from a dataframe
+def extract_band(data):
+    return extract_informative_feature(data, 'band')
+
+
+# extract the label from a dataframe
+def extract_label(data):
+    return extract_informative_feature(
+        data, 'tissue_classification').astype(int)
 
 
 # extract a feature from a dataframe
@@ -128,7 +143,8 @@ def get_data_per_files(path):
 
 
 # read a file and return the array of label and feature extracted
-def get_data_complete(path=PATH, filename=FILENAME, all_feature=False, feature='lf'):
+def get_data_complete(path=PATH, filename=FILENAME,
+                      all_feature=False, feature='lf'):
     if filename not in os.listdir(path):
         raise Exception('File not found')
         # write_data(path, filename)
@@ -136,6 +152,7 @@ def get_data_complete(path=PATH, filename=FILENAME, all_feature=False, feature='
     data = read_data_pickle(path+'/'+filename, False)
     label = extract_label(data)
     patient = extract_patient(data)
+    band = extract_band(data)
     if all_feature:
         data = extract_features(data)
     else:
@@ -145,7 +162,7 @@ def get_data_complete(path=PATH, filename=FILENAME, all_feature=False, feature='
             data = intensity_of_data(data).to_numpy()
         else:
             data = extract_feature(data)
-    return data, label, patient
+    return data, label, patient, band
 
 
 def get_patient_dict(patient):
