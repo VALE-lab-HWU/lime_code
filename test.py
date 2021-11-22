@@ -1,15 +1,11 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import GridSearchCV
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.model_selection import StratifiedKFold
-from itertoools import islice
+from itertools import islice
 
-import lime_helper as lh
-import process_helper as ph
 import data_helper as dh
 import model_helper as mh
-import explain_helper as eh
 import ml_helper as mlh
 
 import pickle
