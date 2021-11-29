@@ -3,6 +3,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.model_selection import StratifiedKFold
 from itertools import islice
+from arg import parse_args
 
 import data_helper as dh
 import model_helper as mh
@@ -24,18 +25,32 @@ def load_pkl(fname='./res.pkl'):
     return res
 
 
+def write_log(flog, msg):
+    with open('./'+flog, 'a') as f:
+        f.write(msg+'\n')
+
+
+def reset_files(args):
+    with open('./'+args.name, 'w+') as f:
+        f.write('')
+    with open('./'+args.log, 'w+') as f:
+        f.write('')
+
+
 def cv_model_on_set(X, y, pipeline, model, args):
-    return mlh.cross_validate(mh.run_model, X, y, k=3,
-                              save_model=True,
-                              model_fn=pipeline,
-                              model=GridSearchCV,
-                              model_kwargs={'estimator': model,
-                                            'param_grid': args})
+    return mlh.run_train_and_test(mh.run_model, X, y,
+                                  save_model=True,
+                                  model_fn=pipeline,
+                                  model=GridSearchCV,
+                                  model_kwargs={'estimator': model,
+                                                'param_grid': args})
 
 
-def cv_all_model_on_set(X, y, pipelines, models, args, name):
+def cv_all_model_on_set(X, y, pipelines, models, args, name, log):
     res = {}
+    write_log(log, 'start!')
     for i in range(len(pipelines)):
+        write_log(log, name[i])
         predict = cv_model_on_set(X, y, pipelines[i], models[i], args[i])
         res[name[i]] = predict
     return res
@@ -130,13 +145,15 @@ def get_set_it_lf_b1_b2(it, lf, lb, patient, band):
     return X, y, p
 
 
-def cv_one_set(fn, it, lf, lb, patient, band, pipelines, models, args, names):
+def cv_one_set(
+        fn, it, lf, lb, patient, band, pipelines, models, args, names, log):
     X, y, p = fn(it, lf, lb, patient, band)
     return {'X': X, 'y': y, 'p': p,
-            **cv_all_model_on_set(X, y, pipelines, models, args, names)}
+            **cv_all_model_on_set(X, y, pipelines, models, args, names, log)}
 
 
-def cv_all_set(it, lf, lb, patient, band, pipelines, models, args, names):
+def cv_all_set(
+        it, lf, lb, patient, band, pipelines, models, args, names, g_args):
     res = {}
     fn_dict = {'lf': get_set_lf, 'it': get_set_it,
                'lf_b1': get_set_lf_b1, 'lf_b2': get_set_lf_b2,
@@ -146,11 +163,15 @@ def cv_all_set(it, lf, lb, patient, band, pipelines, models, args, names):
                'it_lf_b1': get_set_it_lf_b1,
                'it_lf_b2': get_set_it_lf_b2,
                'it_lf_b1_b2': get_set_it_lf_b1_b2}
-    for k in fn_dict:
-        print(k)
-        res[k] = cv_one_set(fn_dict[k], it, lf, lb, patient, band,
-                            pipelines, models, args, names)
-        save_pkl(res)
+    write_log(g_args.log, g_args.set)
+    res = cv_one_set(fn_dict[g_args.set], it, lf, lb, patient, band,
+                     pipelines, models, args, names, log=g_args.log)
+    save_pkl(res, fname='./'+g_args.name)
+    # for k in fn_dict:
+    #     print(k)
+    #     res[k] = cv_one_set(fn_dict[k], it, lf, lb, patient, band,
+    #                         pipelines, models, args, names)
+    #     save_pkl(res)
     return res
 
 
@@ -171,12 +192,15 @@ def get_test(it, lf, lb, p, b):
         (itt, lft, lbt, pt, bt)
 
 
-def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
+def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
+    write_log(global_args.log, 'read data')
     (it, lf), label, patient, band = dh.get_data_complete(
         path, filename, all_feature=True)
+    write_log(global_args.log, 'split test')
     train, test = get_test(it, lf, label, patient, band)
     it, lf, lb, patient, band = train
-    save_pkl([train, test], 'data.pkl')
+    write_log(global_args.log, 'save data')
+    save_pkl([train, test], global_args.set+'_data.pkl')
     names = ['mlp', 'rf', 'svc', 'gpc', 'knn']
     # it's the same, but it's in case we don't want to do pca
     # or want to run specific process for some models
@@ -202,12 +226,15 @@ def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
             {'kernel': [[RBF(i) for i in np.logspace(-1, 1, 2)]]},
             {'n_neighbors': np.arange(1, 7)}]
     res = cv_all_set(it, lf, lb, patient, band,
-                     pipelines, models, args, names)
+                     pipelines, models, args, names, global_args)
     save_pkl([train, test], 'data.pkl')
     save_pkl(res)
 
 
 if __name__ == '__main__':
+    args = parse_args()
+    reset_files(args)
+    write_log(args.log, 'Set seed')
     print('Set seed')
     np.random.seed(RANDOM_SEED)
-    main()
+    main(args)

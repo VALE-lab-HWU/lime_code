@@ -551,11 +551,15 @@ def cross_validate_stratified(fn, data, label, patient, k=10, **kwargs):
 ####
 # run a simple train and test classification
 # split the dataset according to percent (percent for train 1-percent for test)
-def run_train_and_test(fn, data, label, percent=0.7, **kwargs):
+def run_train_and_test(fn, data, label, percent=0.7, save_model=False,
+                       **kwargs):
     x_train, x_test, y_train, y_test = train_test_split(
         data, label, train_size=percent)
-    predicted = fn(x_train, y_train, x_test, **kwargs)
-    return (x_test, predicted, y_test)
+    predicted = fn(x_train, y_train, x_test, save_model=save_model, **kwargs)
+    if save_model:
+        return (predicted[0], y_test, predicted[1])
+    else:
+        return (predicted, y_test)
 
 
 def get_data_label_from_patient(p_index, patient,  *data):
@@ -581,7 +585,7 @@ def run_train_and_test_patient(
     x_train, x_test, y_train, y_test = get_train_and_test(
         p_train, p_test, data, label, patient)
     predicted = fn(x_train, y_train, x_test, **kwargs)
-    return (x_test, predicted, y_test)
+    return (predicted, y_test)
 
 
 ####

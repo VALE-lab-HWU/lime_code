@@ -6,7 +6,7 @@ import os
 PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
 
-PATH_CLEANED = PATH +  '/cleaned'
+PATH_CLEANED = PATH + '/cleaned'
 FILE_PREFIX = 'band_cleaned_'
 FILE_SUFFIX = '_all_patient.pickle'
 FILEMAIN = 'MDCEBL'
