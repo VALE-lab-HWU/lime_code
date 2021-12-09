@@ -205,11 +205,10 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     write_log(global_args.log, 'save data')
     save_pkl([train_b1, train_b2, test_b1, test_b2],
              global_args.set+'_data.pkl')
-    names = ['mlp', 'rf', 'svc', 'gpc', 'knn']
+    names = ['mlp', 'rf', 'svc', 'knn']
     # it's the same, but it's in case we don't want to do pca
     # or want to run specific process for some models
     pipelines = [mlh.build_pipeline_pca_model,
-                 mlh.build_pipeline_pca_model,
                  mlh.build_pipeline_pca_model,
                  mlh.build_pipeline_pca_model,
                  mlh.build_pipeline_pca_model]
@@ -217,8 +216,6 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
               mh.build_random_forest_model(
                   n_jobs=-1, max_depth=None, min_samples_split=2),
               mh.build_svc_model(probability=True),
-              mh.build_gaussian_cla_model(
-                  n_jobs=-1, max_iter_predict=500),
               mh.build_knn_model(n_jobs=-1)]
     args = [{'alpha': [1, 0.1, 0.001, 0.001, 0.0001],
              'hidden_layer_sizes': [(64, 32), (128, 64),
@@ -227,7 +224,6 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
              'max_features': [0.1, 0.25, 0.5, 0.75, 0.9]},
             {'C': [0.001, 0.01, 0.1, 1, 10, 100],
              'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
-            {'kernel': [[RBF(i) for i in np.logspace(-1, 1, 2)]]},
             {'n_neighbors': np.arange(1, 7)}]
     res = cv_all_set(train_b1, train_b2,
                      pipelines, models, args, names, global_args)
