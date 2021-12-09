@@ -37,13 +37,9 @@ def reset_files(args):
         f.write('')
 
 
-def cv_model_on_set(X, y, pipeline, model, args):
-    return mlh.run_train_and_test(mh.run_model, X, y,
-                                  save_model=True,
-                                  model_fn=pipeline,
-                                  model=GridSearchCV,
-                                  model_kwargs={'estimator': model,
-                                                'param_grid': args})
+def run_model_on_set(X, y, pipeline, model, args):
+    return mh.get_model(X, y, model_fn=pipeline, model=GridSearchCV,
+                        model_kwargs={'estimator': model, 'param_grid': args})
 
 
 def cv_all_model_on_set(X, y, pipelines, models, args, name, log):
@@ -51,109 +47,112 @@ def cv_all_model_on_set(X, y, pipelines, models, args, name, log):
     write_log(log, 'start!')
     for i in range(len(pipelines)):
         write_log(log, name[i])
-        predict = cv_model_on_set(X, y, pipelines[i], models[i], args[i])
-        res[name[i]] = predict
+        model = run_model_on_set(X, y, pipelines[i], models[i], args[i])
+        res[name[i]] = model
     return res
 
 
 # return all lifetime images
-def get_set_lf(it, lf, lb, patient, band):
-    X = lf
-    y = lb
-    p = patient
+def get_set_lf(train_b1, train_b2):
+    X = np.concatenate((train_b1['lf'], train_b2['lf']))
+    y = np.concatenate((train_b1['lb'], train_b2['lb']))
+    p = np.concatenate((train_b1['p'], train_b2['p']))
     return X, y, p
 
 
 # return all intensity images
-def get_set_it(it, lf, lb, patient, band):
-    X = it
-    y = lb
-    p = patient
+def get_set_it(train_b1, train_b2):
+    X = np.concatenate((train_b1['it'], train_b2['it']))
+    y = np.concatenate((train_b1['lb'], train_b2['lb']))
+    p = np.concatenate((train_b1['p'], train_b2['p']))
     return X, y, p
 
 
 # return all lifetime images of band 1
-def get_set_lf_b1(it, lf, lb, patient, band):
-    X = lf[band == 1]
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_lf_b1(train_b1, train_b2):
+    X = train_b1['lf']
+    y = train_b1['lb']
+    p = train_b1['p']
     return X, y, p
 
 
 # return all lifetime images of band 2
-def get_set_lf_b2(it, lf, lb, patient, band):
-    X = lf[band == 2]
-    y = lb[band == 2]
-    p = patient[band == 2]
+def get_set_lf_b2(train_b1, train_b2):
+    X = train_b2['lf']
+    y = train_b2['lb']
+    p = train_b2['p']
     return X, y, p
 
 
 # return all intensity images of band 1
-def get_set_it_b1(it, lf, lb, patient, band):
-    X = it[band == 1]
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_it_b1(train_b1, train_b2):
+    X = train_b1['it']
+    y = train_b1['lb']
+    p = train_b1['p']
     return X, y, p
 
 
 # return all intensity images of band 2
-def get_set_it_b2(it, lf, lb, patient, band):
-    X = it[band == 2]
-    y = lb[band == 2]
-    p = patient[band == 2]
+def get_set_it_b2(train_b1, train_b2):
+    X = train_b2['it']
+    y = train_b2['lb']
+    p = train_b2['p']
     return X, y, p
 
 
 # return lifetime of band 1 and 2 stacked
-def get_set_lf_b1_b2(it, lf, lb, patient, band):
-    X = np.concatenate((lf[band == 1], lf[band == 2]), axis=1)
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_lf_b1_b2(train_b1, train_b2):
+    X = np.concatenate((train_b1['lf'], train_b2['lf']), axis=1)
+    y = train_b1['lb']
+    p = train_b1['p']
     return X, y, p
 
 
 # return intensity of band 1 and 2 stacked
-def get_set_it_b1_b2(it, lf, lb, patient, band):
-    X = np.concatenate((it[band == 1], it[band == 2]), axis=1)
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_it_b1_b2(train_b1, train_b2):
+    X = np.concatenate((train_b1['it'], train_b2['it']), axis=1)
+    y = train_b1['lb']
+    p = train_b1['p']
     return X, y, p
 
 
 # return intensity of band 1 and 2 stacked
-def get_set_it_lf_b1(it, lf, lb, patient, band):
-    X = np.concatenate((it[band == 1], lf[band == 1]), axis=1)
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_it_lf_b1(train_b1, train_b2):
+    X = np.concatenate((train_b1['it'], train_b1['lf']), axis=1)
+    y = train_b1['lb']
+    p = train_b1['p']
     return X, y, p
 
 
 # return intensity of band 1 and 2 stacked
-def get_set_it_lf_b2(it, lf, lb, patient, band):
-    X = np.concatenate((it[band == 2], lf[band == 2]), axis=1)
-    y = lb[band == 2]
-    p = patient[band == 2]
+def get_set_it_lf_b2(train_b1, train_b2):
+    X = np.concatenate((train_b2['it'], train_b2['lf']), axis=1)
+    y = train_b2['lb']
+    p = train_b2['p']
     return X, y, p
 
 
 # return intensity of band 1 and 2 stacked
-def get_set_it_lf_b1_b2(it, lf, lb, patient, band):
-    X = np.concatenate(
-        (it[band == 1], it[band == 2], lf[band == 1], lf[band == 2]), axis=1)
-    y = lb[band == 1]
-    p = patient[band == 1]
+def get_set_it_lf_b1_b2(train_b1, train_b2):
+    X = np.concatenate((train_b1['it'], train_b1['lf'],
+                        train_b2['it'], train_b2['lf']),
+                       axis=1)
+    y = train_b2['lb']
+    p = train_b2['p']
     return X, y, p
 
 
 def cv_one_set(
-        fn, it, lf, lb, patient, band, pipelines, models, args, names, log):
-    X, y, p = fn(it, lf, lb, patient, band)
+        fn, train_b1, train_b2, pipelines, models, args, names, log):
+    X, y, p = fn(train_b1, train_b2)
+    idx = np.random.permutation(len(X))
+    X, y, p = X[idx], y[idx], p[idx]
     return {'X': X, 'y': y, 'p': p,
             **cv_all_model_on_set(X, y, pipelines, models, args, names, log)}
 
 
 def cv_all_set(
-        it, lf, lb, patient, band, pipelines, models, args, names, g_args):
+        train_b1, train_b2, pipelines, models, args, names, g_args):
     res = {}
     fn_dict = {'lf': get_set_lf, 'it': get_set_it,
                'lf_b1': get_set_lf_b1, 'lf_b2': get_set_lf_b2,
@@ -164,7 +163,7 @@ def cv_all_set(
                'it_lf_b2': get_set_it_lf_b2,
                'it_lf_b1_b2': get_set_it_lf_b1_b2}
     write_log(g_args.log, g_args.set)
-    res = cv_one_set(fn_dict[g_args.set], it, lf, lb, patient, band,
+    res = cv_one_set(fn_dict[g_args.set], train_b1, train_b2,
                      pipelines, models, args, names, log=g_args.log)
     save_pkl(res, fname='./'+g_args.name)
     # for k in fn_dict:
@@ -175,21 +174,25 @@ def cv_all_set(
     return res
 
 
+def get_idx_train_test(p):
+    idx_test = p == p[-1]
+    idx_train = ~idx_test
+    return np.nonzero(idx_train)[0], np.nonzero(idx_test)[0]
+
+
+def get_idx_b1(b):
+    return np.nonzero(b == 1)[0]
+
+
 def get_test(it, lf, lb, p, b):
-    idx = p == p[-1]
-    itt, lft, lbt, pt, bt = it[idx], lf[idx], lb[idx], p[idx], b[idx]
-    it2, lf2, lb2, p2, b2 = it[~idx], lf[~idx], lb[~idx], p[~idx], b[~idx]
-    stk = StratifiedKFold(10)
-    split = stk.split(it2, p2)
-    idx2 = list(islice(split, 1))[0]
-    itt = np.concatenate((itt, it2[idx2[1]]))
-    lft = np.concatenate((lft, lf2[idx2[1]]))
-    lbt = np.concatenate((lbt, lb2[idx2[1]]))
-    pt = np.concatenate((pt, p2[idx2[1]]))
-    bt = np.concatenate((bt, b2[idx2[1]]))
-    return (it2[idx2[0]], lf2[idx2[0]], lb2[idx2[0]],
-            p2[idx2[0]], b2[idx2[0]]), \
-        (itt, lft, lbt, pt, bt)
+    args = locals()
+    idxb1 = get_idx_b1(b)
+    train_p, test_p = get_idx_train_test(p[idxb1])
+    stk = StratifiedKFold(10, shuffle=True)
+    train, test_b = list(islice(stk.split(train_p, p[train_p]), 1))[0]
+    test = np.concatenate((test_b, test_p))
+    idxs = [train*2, train*2+1, test*2, test*2+1]
+    return [{i: args[i][j] for i in args} for j in idxs]
 
 
 def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
@@ -197,10 +200,11 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     (it, lf), label, patient, band = dh.get_data_complete(
         path, filename, all_feature=True)
     write_log(global_args.log, 'split test')
-    train, test = get_test(it, lf, label, patient, band)
-    it, lf, lb, patient, band = train
+    train_b1, train_b2, test_b1, test_b2 = get_test(
+        it, lf, label, patient, band)
     write_log(global_args.log, 'save data')
-    save_pkl([train, test], global_args.set+'_data.pkl')
+    save_pkl([train_b1, train_b2, test_b1, test_b2],
+             global_args.set+'_data.pkl')
     names = ['mlp', 'rf', 'svc', 'gpc', 'knn']
     # it's the same, but it's in case we don't want to do pca
     # or want to run specific process for some models
@@ -225,9 +229,8 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
              'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
             {'kernel': [[RBF(i) for i in np.logspace(-1, 1, 2)]]},
             {'n_neighbors': np.arange(1, 7)}]
-    res = cv_all_set(it, lf, lb, patient, band,
+    res = cv_all_set(train_b1, train_b2,
                      pipelines, models, args, names, global_args)
-    save_pkl([train, test], 'data.pkl')
     save_pkl(res)
 
 
