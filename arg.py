@@ -10,3 +10,10 @@ def parse_args():
     argp.add_argument('-l', dest='log', type=str, default='out',
                       help='log file name')
     return argp.parse_args()
+
+
+def parse_args_read():
+    argp = argparse.ArgumentParser('arg read result')
+    argp.add_argument('-i', dest='input', type=str,
+                      help='input file', default='it')
+    return argp.parse_args()

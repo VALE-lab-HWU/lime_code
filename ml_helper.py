@@ -108,6 +108,18 @@ def get_score_main(matrix):
     return res
 
 
+# get multiple values out of a confusion matrix
+# recall (tpr)
+# precition (ppv)
+def get_score_main_ext(matrix):
+    res = {}
+    res['ppv'] = dvd(matrix[0][0], (matrix[:, 0].sum()))
+    res['npv'] = dvd(matrix[1][1], matrix[:, 1].sum())
+    res['tpr'] = dvd(matrix[0][0], matrix[0].sum())
+    res['tnr'] = dvd(matrix[1][1], matrix[1].sum())
+    return res
+
+
 def get_score_predicted_1(matrix):
     res = {}
     res['tpr'] = dvd(matrix[0][0], matrix[0].sum())
@@ -241,6 +253,11 @@ def get_all_score(predicted, label, matrix):
     return res
 
 
+def get_score_read_test(predicted, label, matrix):
+    res = get_score_predicted(matrix)
+    res = {**res, **get_score_about_score(res)}
+    res = {**res, **get_accuracy(matrix)}
+
 # get multiple values out of a confusion matrix
 # recall (tpr)
 # precision (ppv)
@@ -249,7 +266,7 @@ def get_all_score(predicted, label, matrix):
 # f1 score (f_1)
 # area under the roc curve (auc)
 def get_score_verbose_2(predicted, label, matrix):
-    res = get_score_main(matrix)
+    res = get_score_main_ext(matrix)
     res = {**res, **get_score_total(matrix)}
     res = {**res, **get_score_f1(res)}
     res = {**res, **get_roc_auc_score(predicted, label)}
