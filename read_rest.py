@@ -57,7 +57,8 @@ def exec_on_data(fn_init, fn_exec, fn_init_md, fn_exec_md):
     for i in list_arg:
         print('Data:', i)
         model, d1, d2, d3, unique_l = setup_md(i, fn_dict, data)
-        res_md = exec_on_model(i, data, fn_dict, fn_init_md, fn_exec_md, res, model, d1, d2, d3, unique_l)
+        res_md = exec_on_model(i, data, fn_dict, fn_init_md, fn_exec_md, res,
+                               model, d1, d2, d3, unique_l)
         fn_exec(res, res_md, i, d1, d2, d3, unique_l)
     return res
 
@@ -165,7 +166,7 @@ def fn_main_ens_md(res, res_dt, model, X, y, p, X2, y2, p2, y3, y4,
 
 
 def fn_main_ens_init_dt():
-    return pd.DataFrame()
+    return [pd.DataFrame()]
 
 
 def fn_main_ens_dt(res_dt, res_md, arg, d1, d2, d3, unique_l):
@@ -189,16 +190,15 @@ def fn_main_ens_dt(res_dt, res_md, arg, d1, d2, d3, unique_l):
     score4 = {'name': arg + ' test holdout',
               **mlh.get_score_verbose_2(res4, d3[1], matrix4),
               **matrix_to_dict(matrix4)}
-    res_dt = res_dt.append(score, ignore_index=True)
-    res_dt = res_dt.append(score2, ignore_index=True)
-    res_dt = res_dt.append(score3, ignore_index=True)
-    res_dt = res_dt.append(score4, ignore_index=True)
-
+    res_dt[0] = res_dt[0].append(score, ignore_index=True)
+    res_dt[0] = res_dt[0].append(score2, ignore_index=True)
+    res_dt[0] = res_dt[0].append(score3, ignore_index=True)
+    res_dt[0] = res_dt[0].append(score4, ignore_index=True)
 
 def main_ens():
     res = exec_on_data(fn_main_ens_init_dt, fn_main_ens_dt,
                        fn_main_ens_init_md, fn_main_ens_md)
-    res.to_csv('robo/ens3.csv')
+    res[0].to_csv('robo/ens3.csv')
 
 
 def main_best(arg):
