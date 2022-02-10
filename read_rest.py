@@ -1,5 +1,6 @@
 import data_helper as dh
 from arg import parse_args_read
+import matplotlib.pyplot as plt
 import paper_test
 import ml_helper as mlh
 import os
@@ -7,6 +8,22 @@ import pandas as pd
 import numpy as np
 from sklearn import metrics
 from bcolors import Bcolors
+
+
+type_list = ['lf',
+             'it',
+             'lf_b1',
+             'lf_b2',
+             'it_b1',
+             'it_b2',
+             'lf_b1_b2',
+             'it_b1_b2',
+             'it_lf_b1',
+             'it_lf_b2',
+             'it_lf_b1_b2']
+
+
+type_run = ['test', 'train', 'patient', 'holdout']
 
 
 def setup_dt():
@@ -49,7 +66,8 @@ def exec_on_model(arg, data, fn_dict, fn_init, fn_exec, res_dt,
     return res_md
 
 
-def exec_on_data(fn_init, fn_exec, fn_init_md, fn_exec_md):
+def exec_on_data(fn_init, fn_exec, fn_init_md, fn_exec_md,
+                 names=['mlp', 'rf', 'svc', 'knn']):
     fn_dict, data = setup_dt()
     list_arg = [i.replace('output_', '').replace('.pkl', '')
                 for i in os.listdir('robo') if i.startswith('output_')]
@@ -58,7 +76,7 @@ def exec_on_data(fn_init, fn_exec, fn_init_md, fn_exec_md):
         print('Data:', i)
         model, d1, d2, d3, unique_l = setup_md(i, fn_dict, data)
         res_md = exec_on_model(i, data, fn_dict, fn_init_md, fn_exec_md, res,
-                               model, d1, d2, d3, unique_l)
+                               model, d1, d2, d3, unique_l, names)
         fn_exec(res, res_md, i, d1, d2, d3, unique_l)
     return res
 
@@ -195,10 +213,13 @@ def fn_main_ens_dt(res_dt, res_md, arg, d1, d2, d3, unique_l):
     res_dt[0] = res_dt[0].append(score3, ignore_index=True)
     res_dt[0] = res_dt[0].append(score4, ignore_index=True)
 
+
 def main_ens():
+    prefix = 'mr'
     res = exec_on_data(fn_main_ens_init_dt, fn_main_ens_dt,
-                       fn_main_ens_init_md, fn_main_ens_md)
-    res[0].to_csv('robo/ens3.csv')
+                       fn_main_ens_init_md, fn_main_ens_md,
+                       names=['mlp', 'rf'])
+    res[0].to_csv('robo/ens_'+prefix+'.csv')
 
 
 def main_best(arg):
@@ -226,6 +247,56 @@ def main_best(arg):
             elif s > 0.70:
                 print(Bcolors.YELLOW, end='')
             print(s, Bcolors.NC)
+
+
+def main_set_graph(ax, length, title):
+    ax.set_xlim(-0.05, length)
+    ax.set_ylim(0, 1.1)
+    ax.legend()
+    ax.set_title(title)
+
+
+def main_graph_scores():
+    scores = dh.read_data_pickle('robo/scores.pkl')
+    dt_list = list(scores['test'].keys())
+    mdl_list = list(scores['test'][dt_list[0]].keys())
+    for k in scores.keys():
+        fig, ax = plt.subplots()
+        for i in mdl_list:
+            tmp = [scores[k][j][i] for j in dt_list]
+            ax.plot(dt_list, tmp, marker='o', label=i)
+        main_set_graph(ax, len(dt_list)-0.95, k)
+        fig.savefig('robo/graph/'+k+'.png')
+
+
+def main_graph_ensemble():
+    ensembles = pd.read_csv('robo/ens_mrsk.csv')
+    fig, ax = plt.subplots()
+    for i in type_run:
+        ens_test = ensembles[ensembles['name'].str.contains(i+'$', regex=True)]
+        ax.plot(ens_test.name.str.split(' ').str[0], ens_test['acc'], label=i)
+    main_set_graph(ax, len(ens_test)-0.95, 'Ensemble')
+    fig.savefig('robo/graph/ensemble_mrsk.png')
+
+
+def main_param():
+    list_arg = [i.replace('output_', '').replace('.pkl', '')
+                for i in os.listdir('robo') if i.startswith('output_')]
+    best_params = {}
+    for i in list_arg:
+        tmp, _, _, _ = load_model(i)
+        for j in ['mlp', 'rf', 'svc', 'knn']:
+            if j not in best_params:
+                best_params[j] = {
+                    o: [] for o in tmp[j][1].best_params_.keys()}
+            for k in tmp[j][1].best_params_:
+                best_params[j][k].append(tmp[j][1].best_params_[k])
+    for i in best_params:
+        print(i)
+        for j in best_params[i]:
+            print(j+':', np.unique(best_params[i][j], return_counts=True,
+                                   axis=0))
+                
 
 
 if __name__ == '__main__':
