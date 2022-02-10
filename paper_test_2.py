@@ -128,9 +128,9 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     }
     res = run_cross_validation_custom(models, X, y, shuffle=False)
     save_pkl(res, global_args.name)
-        
-    
-if __name__ == ' __main__':
+
+
+if __name__ == '__main__':
     args = parse_args()
     reset_files(args)
     write_log(args.log, 'Set seed')
