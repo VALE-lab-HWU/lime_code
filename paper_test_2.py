@@ -93,7 +93,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
                'it_lf_b2': paper_test.get_set_it_lf_b2,
                'it_lf_b1_b2': paper_test.get_set_it_lf_b1_b2}
     b1, b2 = get_band_set(it, lf, label, patient, band)
-    X, y, p = fn_dict['it'](b1, b2)
+    X, y, p = fn_dict[args.set](b1, b2)
     p, X, y = get_data_per_patient(p, X, y)
     # models pipeline pca with random state
     models = {
