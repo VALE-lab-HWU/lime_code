@@ -15,5 +15,11 @@ def parse_args():
 def parse_args_read():
     argp = argparse.ArgumentParser('arg read result')
     argp.add_argument('-i', dest='input', type=str,
-                      help='input file', default='it')
+                      help="input info = what to do, or files, it's confusing",
+                      default='it')
+    argp.add_argument('-p', dest='prefix', type=str,
+                      help='the prefix for the file to use for graph',
+                      default='mrsk')
+    argp.add_argument('-m', dest='metric', type=str,
+                      help='the metric to plot', default='acc')
     return argp.parse_args()

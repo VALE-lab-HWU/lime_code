@@ -37,20 +37,20 @@ def setup_dt():
                'it_lf_b1': paper_test.get_set_it_lf_b1,
                'it_lf_b2': paper_test.get_set_it_lf_b2,
                'it_lf_b1_b2': paper_test.get_set_it_lf_b1_b2}
-    data = dh.read_data_pickle('robo/data.pkl')
+    data = dh.read_data_pickle('robo/grid/data.pkl')
     return fn_dict, data
 
 
-def setup_md(arg, fn_dict, data):
-    model, X, y, p = load_model(arg)
+def setup_md(arg, fn_dict, data, path='grid'):
+    model, X, y, p = load_model(arg, path)
     X2, y2, p2 = fn_dict[arg](data[2], data[3])
     y3, y4 = y2[p2 == '20190227'], y2[p2 != '20190227']
     unique_l = np.unique(y)[::-1]
     return model, [X, y, p], [X2, y2, p2], [y3, y4], unique_l
 
 
-def load_model(arg):
-    model = dh.read_data_pickle('robo/output_' + arg + '.pkl')
+def load_model(arg, path='grid'):
+    model = dh.read_data_pickle('robo/'+path+'/output_' + arg + '.pkl')
     X, y, p = model['X'], model['y'], model['p']
     return model, X, y, p
 
@@ -67,14 +67,14 @@ def exec_on_model(arg, data, fn_dict, fn_init, fn_exec, res_dt,
 
 
 def exec_on_data(fn_init, fn_exec, fn_init_md, fn_exec_md,
-                 names=['mlp', 'rf', 'svc', 'knn']):
+                 names=['mlp', 'rf', 'svc', 'knn'], path='grid'):
     fn_dict, data = setup_dt()
     list_arg = [i.replace('output_', '').replace('.pkl', '')
-                for i in os.listdir('robo') if i.startswith('output_')]
+                for i in os.listdir('robo/grid') if i.startswith('output_')]
     res = fn_init()
     for i in list_arg:
         print('Data:', i)
-        model, d1, d2, d3, unique_l = setup_md(i, fn_dict, data)
+        model, d1, d2, d3, unique_l = setup_md(i, fn_dict, data, path)
         res_md = exec_on_model(i, data, fn_dict, fn_init_md, fn_exec_md, res,
                                model, d1, d2, d3, unique_l, names)
         fn_exec(res, res_md, i, d1, d2, d3, unique_l)
@@ -120,10 +120,10 @@ def fn_main_all_md(res, res_dt, model, X, y, p, X2, y2, p2, y3, y4,
     mlh.compare_class(res1, y)
     print('Test matrix')
     mlh.compare_class(res2, y2)
-    matrix = metrics.confusion_matrix(res1, y, labels=unique_l)
-    matrix2 = metrics.confusion_matrix(res2, y2, labels=unique_l)
-    matrix3 = metrics.confusion_matrix(res3, y3, labels=unique_l)
-    matrix4 = metrics.confusion_matrix(res4, y4, labels=unique_l)
+    matrix = metrics.confusion_matrix(y, res1, labels=unique_l)
+    matrix2 = metrics.confusion_matrix(y2, res2, labels=unique_l)
+    matrix3 = metrics.confusion_matrix(y3, res3, labels=unique_l)
+    matrix4 = metrics.confusion_matrix(y4, res4, labels=unique_l)
     score = {'name': arg+' '+md+' train',
              **mlh.get_score_verbose_2(res1, y, matrix),
              **matrix_to_dict(matrix)}
@@ -163,10 +163,10 @@ def fn_main_all_dt(res_dt, res_md, arg, *args):
 def main_all():
     res = exec_on_data(fn_main_all_init_dt, fn_main_all_dt,
                        fn_main_all_init_md, fn_main_all_md)
-    res[0].to_csv('robo/res.csv')
+    res[0].to_csv('robo/grid/res.csv')
     scores = {'train': res[1], 'test': res[2], 'patient': res[3],
               'holdout': res[4], 'best_cv': res[5]}
-    pd.to_pickle(scores, 'robo/scores.pkl')
+    pd.to_pickle(scores, 'robo/grid/scores.pkl')
 
 
 def fn_main_ens_init_md():
@@ -188,14 +188,14 @@ def fn_main_ens_init_dt():
 
 
 def fn_main_ens_dt(res_dt, res_md, arg, d1, d2, d3, unique_l):
-    res = np.average(res_md[0], axis=0) >= 0.5
-    res2 = np.average(res_md[1], axis=0) >= 0.5
-    res3 = np.average(res_md[2], axis=0) >= 0.5
-    res4 = np.average(res_md[3], axis=0) >= 0.5
-    matrix = metrics.confusion_matrix(res, d1[1], labels=unique_l)
-    matrix2 = metrics.confusion_matrix(res2, d2[1], labels=unique_l)
-    matrix3 = metrics.confusion_matrix(res3, d3[0], labels=unique_l)
-    matrix4 = metrics.confusion_matrix(res4, d3[1], labels=unique_l)
+    res = np.average(res_md[0], axis=0) >= 0.25
+    res2 = np.average(res_md[1], axis=0) >= 0.25
+    res3 = np.average(res_md[2], axis=0) >= 0.25
+    res4 = np.average(res_md[3], axis=0) >= 0.25
+    matrix = metrics.confusion_matrix(d1[1], res, labels=unique_l)
+    matrix2 = metrics.confusion_matrix(d2[1], res2, labels=unique_l)
+    matrix3 = metrics.confusion_matrix(d3[0], res3, labels=unique_l)
+    matrix4 = metrics.confusion_matrix(d3[1], res4, labels=unique_l)
     score = {'name': arg + ' train',
              **mlh.get_score_verbose_2(res, d1[1], matrix),
              **matrix_to_dict(matrix)}
@@ -215,15 +215,26 @@ def fn_main_ens_dt(res_dt, res_md, arg, d1, d2, d3, unique_l):
 
 
 def main_ens():
-    prefix = 'mr'
+    prefix = 'mrsk_1'
     res = exec_on_data(fn_main_ens_init_dt, fn_main_ens_dt,
                        fn_main_ens_init_md, fn_main_ens_md,
-                       names=['mlp', 'rf'])
-    res[0].to_csv('robo/ens_'+prefix+'.csv')
+                       names=['mlp', 'rf', 'svc', 'knn'])
+    res[0].to_csv('robo/grid/ens_'+prefix+'.csv')
+
+
+def print_color_res(info, value):
+    print(info, end=' ')
+    if value < 0.5:
+        print(Bcolors.RED, end='')
+    elif value > 0.9:
+        print(Bcolors.GREEN, end='')
+    elif value > 0.70:
+        print(Bcolors.YELLOW, end='')
+    print(value, Bcolors.NC)
 
 
 def main_best(arg):
-    scores = pd.read_pickle('robo/scores.pkl')
+    scores = pd.read_pickle('robo/grid/scores.pkl')
     for i in scores:
         print('-----')
         print(i)
@@ -233,20 +244,13 @@ def main_best(arg):
                 s2 = ''
             elif arg == 'max':
                 s = max(scores[i][j].values())
-                s2 = '-- ' + list(scores[i][j].keys())[
+                s2 = ' -- ' + list(scores[i][j].keys())[
                     np.argmax(list(scores[i][j].values()))]
             elif arg == 'min':
                 s = min(scores[i][j].values())
-                s2 = '-- ' + list(scores[i][j].keys())[
+                s2 = ' -- ' + list(scores[i][j].keys())[
                     np.argmin(list(scores[i][j].values()))]
-            print(j, s2, end=' ')
-            if s < 0.5:
-                print(Bcolors.RED, end='')
-            elif s > 0.9:
-                print(Bcolors.GREEN, end='')
-            elif s > 0.70:
-                print(Bcolors.YELLOW, end='')
-            print(s, Bcolors.NC)
+            print_color_res(j+s2, s)
 
 
 def main_set_graph(ax, length, title):
@@ -257,7 +261,7 @@ def main_set_graph(ax, length, title):
 
 
 def main_graph_scores():
-    scores = dh.read_data_pickle('robo/scores.pkl')
+    scores = dh.read_data_pickle('robo/grid/scores.pkl')
     dt_list = list(scores['test'].keys())
     mdl_list = list(scores['test'][dt_list[0]].keys())
     for k in scores.keys():
@@ -266,22 +270,25 @@ def main_graph_scores():
             tmp = [scores[k][j][i] for j in dt_list]
             ax.plot(dt_list, tmp, marker='o', label=i)
         main_set_graph(ax, len(dt_list)-0.95, k)
-        fig.savefig('robo/graph/'+k+'.png')
+        fig.savefig('robo/grid/graph/'+k+'.png')
 
 
-def main_graph_ensemble():
-    ensembles = pd.read_csv('robo/ens_mrsk.csv')
+def main_graph_ensemble(args):
+    ensembles = pd.read_csv('robo/grid/ens_'+args.prefix+'.csv')
     fig, ax = plt.subplots()
     for i in type_run:
         ens_test = ensembles[ensembles['name'].str.contains(i+'$', regex=True)]
-        ax.plot(ens_test.name.str.split(' ').str[0], ens_test['acc'], label=i)
+        ax.plot(ens_test.name.str.split(' ').str[0], ens_test[args.metric],
+                label=i, marker='o')
     main_set_graph(ax, len(ens_test)-0.95, 'Ensemble')
-    fig.savefig('robo/graph/ensemble_mrsk.png')
+    fig.savefig('robo/grid/graph/ensemble_'+args.prefix+'_'+args.metric+'.png')
 
 
+# get the best param
+# need to factor them by accuracy
 def main_param():
     list_arg = [i.replace('output_', '').replace('.pkl', '')
-                for i in os.listdir('robo') if i.startswith('output_')]
+                for i in os.listdir('robo/grid') if i.startswith('output_')]
     best_params = {}
     for i in list_arg:
         tmp, _, _, _ = load_model(i)
@@ -296,16 +303,98 @@ def main_param():
         for j in best_params[i]:
             print(j+':', np.unique(best_params[i][j], return_counts=True,
                                    axis=0))
-                
+
+
+def fn_main_predict_init_md():
+    return [{}]
+
+
+def fn_main_predict_md(res, res_dt, model, X, y, p, X2, y2, p2, y3, y4,
+                       unique_l, arg, md):
+    res1 = model.predict(X)
+    res2 = model.predict(X2)
+    res3, res4 = res2[p2 == '20190227'], res2[p2 != '20190227']
+    res[0][md] = {}
+    res[0][md]['train'] = {'x': res1, 'y': y}
+    res[0][md]['test'] = {'x': res2, 'y': y2}
+    res[0][md]['patient'] = {'x': res3, 'y': y3}
+    res[0][md]['holdout'] = {'x': res4, 'y': y4}
+
+
+def fn_main_predict_init_dt():
+    return [{}]
+
+
+def fn_main_predict_dt(res_dt, res_md, arg, *args):
+    res_dt[0][arg] = res_md
+
+
+def main_predict():
+    res = exec_on_data(fn_main_predict_init_dt, fn_main_predict_dt,
+                       fn_main_predict_init_md, fn_main_predict_md)
+    pd.to_pickle(res, 'robo/grid/predict.pkl')
+
+
+
+def main_read_2_all(args):
+    try:
+        metric = args.metric
+    except NameError:
+        metric = 'acc'
+    list_arg = [i.replace('output_', '').replace('.pkl', '')
+                for i in os.listdir('robo/best_out')
+                if i.startswith('output_')]
+    res_pt = []
+    for i in list_arg:
+        data = dh.read_data_pickle('robo/best_out/output_'+i+'.pkl')
+        fig, ax = plt.subplots()
+        res_ds = {}
+        for j in range(len(data)):
+            d = data[j]
+            if len(res_pt) <= j:
+                res_pt.append({})
+            for mdl in d[0]:
+                matrix = metrics.confusion_matrix(d[1], d[0][mdl],
+                                                  labels=[1, 0])
+                score = {**mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)}
+                if mdl not in res_ds:
+                    res_ds[mdl] = []
+                if mdl not in res_pt[j]:
+                    res_pt[j][mdl] = []
+                res_ds[mdl].append(score[metric])
+                res_pt[j][mdl].append(score[metric])
+        for mdl in res_ds:
+            ax.plot(res_ds[mdl], marker='o', label=mdl)
+        main_set_graph(ax, len(data)-0.95, i)
+        fig.savefig('robo/best_out/graph/dataset/'+i+'.png')
+    for i in range(len(res_pt)):
+        pt = res_pt[i]
+        fig, ax = plt.subplots()
+        for mdl in pt:
+            ax.plot(list_arg, pt[mdl], marker='o', label=mdl)
+        main_set_graph(ax, len(list_arg)-0.95, 'patient '+str(i))
+        fig.savefig('robo/best_out/graph/patient/patient'+str(i)+'.png')
 
 
 if __name__ == '__main__':
     args = parse_args_read()
     if args.input == 'all':
+        # compute all result for train, test, patient, holdout
+        # store it with all measure in res.csv
+        # store in scores.pkl the accuracy for each model for each data
         main_all()
+    elif args.input == 'plot':
+        main_graph_ensemble(args)
     elif args.input in ['avg', 'max', 'min']:
+        # print avg, max or min result in color
+        # from scores.pkl
         main_best(args.input)
     elif args.input == 'ens':
+        # run ensmble model on data test
+        # save result for combination models
         main_ens()
+    elif args.input == 'predict':
+        main_predict()
     else:
+        # compare class and print matrix
         main(args.input)
