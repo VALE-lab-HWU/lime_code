@@ -335,7 +335,6 @@ def main_predict():
     pd.to_pickle(res, 'robo/grid/predict.pkl')
 
 
-
 def main_read_2_all(args):
     try:
         metric = args.metric
@@ -376,6 +375,23 @@ def main_read_2_all(args):
         fig.savefig('robo/best_out/graph/patient/patient'+str(i)+'.png')
 
 
+def main_2_print(arg):
+    try:
+        metric = args.metric
+    except NameError:
+        metric = 'acc'
+    s = arg.file
+    data = dh.read_data_pickle('robo/best_out/output_'+s+'.pkl')
+    for i in range(len(data)):
+        print('\nPatient', i)
+        d = data[i]
+        for mdl in d[0]:
+            matrix = metrics.confusion_matrix(d[1], d[0][mdl],
+                                              labels=[1, 0])
+            score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
+            print_color_res(mdl+' '+metric, score[metric])
+
+
 if __name__ == '__main__':
     args = parse_args_read()
     if args.input == 'all':
@@ -389,6 +405,8 @@ if __name__ == '__main__':
         # print avg, max or min result in color
         # from scores.pkl
         main_best(args.input)
+    elif args.input == 'print':
+        main_2_print(args)
     elif args.input == 'ens':
         # run ensmble model on data test
         # save result for combination models

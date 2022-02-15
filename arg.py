@@ -22,4 +22,25 @@ def parse_args_read():
                       default='mrsk')
     argp.add_argument('-m', dest='metric', type=str,
                       help='the metric to plot', default='acc')
+    argp.add_argument('-mode', dest='mode', type=str,
+                      help='mode patient, dataset', default='p')
+    argp.add_argument('-type', dest='type', type=str,
+                      help='type all, avg, best', default='avg')
+    
     return argp.parse_args()
+
+
+def parse_2():
+    argp = argparse.ArgumentParser('arg read result')
+    argp.add_argument('-m', dest='metric', type=str,
+                      help="the metric to use if relevant",
+                      default='acc')
+    argp.add_argument('-s', dest='set', type=str,
+                      help="the dataset to use, if relevant",
+                      default='it')
+    argp.add_argument('-p', dest='patient', type=int,
+                      help="the patient to use if relevant",
+                      default=1)
+    argp.add_argument('-p', dest='patient', type=int,
+                      help="the patient to use if relevant",
+                      default=1)

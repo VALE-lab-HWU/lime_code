@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from copy import deepcopy
 import process_helper as ph
 import re
+import math
 ####
 # MATRIX PRINTING
 ####
@@ -65,7 +66,7 @@ def print_matrix(layout, L=8):
 
 
 def dvd(a, b):
-    if b == 0:
+    if b == 0 or b == float('inf') or math.isnan(b):
         return float('inf')
     else:
         return a/b
@@ -210,8 +211,10 @@ def get_score_f1(score):
     denom = (score['ppv'] + score['tpr'])
     if denom == 0:
         res['f_1'] = 0
+    elif denom == float('inf'):
+        res['f_1'] = 0
     else:
-        res['f_1'] = 2.0 * (score['ppv'] * score['tpr']) / denom
+        res['f_1'] = 2.0 * dvd(score['ppv'] * score['tpr'], denom)
     return res
 
 
