@@ -4,12 +4,15 @@ import matplotlib.pyplot as plt
 import paper_test
 import ml_helper as mlh
 import os
+import sys
 import pandas as pd
 import numpy as np
 from sklearn import metrics
 from bcolors import Bcolors
+from functools import partial
 
 
+# general utility
 def invert_dict(scores):
     res = {}
     for i in scores:
@@ -20,10 +23,28 @@ def invert_dict(scores):
     return res
 
 
+def identity(x):
+    return x
+
+
+###########
+# metrics #
+###########
 def get_acc(score):
+    return {'acc': score['acc']}
+
+
+def get_acc_tpr(score):
     return {'acc': score['acc'], 'tpr': score['tpr']}
 
 
+def get_metrics(score, to_gets):
+    return {i: score[i] for i in to_gets}
+
+
+##########
+# models #
+##########
 def get_fn_model(scores, fn=np.argmax, axis=0, idx=True, idx_used='acc'):
     res = {}
     ivd = invert_dict(scores)
@@ -52,6 +73,23 @@ def get_average(scores):
     return get_fn_model(scores, fn=np.average, idx=False)
 
 
+LST = {'max': get_best, 'min': get_min, 'avg': get_average}
+
+
+def get_for_model(scores, to_gets):
+    res = {}
+    for to_get in to_gets:
+        if to_get in LST:
+            res[to_get] = LST[to_get](scores)
+        else:  # ugly ... and?
+            sys.exit('wrong model operator')
+    return res
+
+
+###
+# exectute metrics on all score
+# and return model-level processed score
+###
 def for_all_model(d, fn_metrics, fn_model):
     res = {}
     for mdl in d[0]:
@@ -63,11 +101,20 @@ def for_all_model(d, fn_metrics, fn_model):
     return fn_model(res)
 
 
+############
+# patients #
+############
 def best_patient(scores):
-    print(scores)
-    return scores
+    tmp = invert_dict(scores)
+    for i in tmp:
+        tmp[i] = get_best(tmp[i])
+    return {'avg': tmp}
 
 
+###
+# exectute models function for all model
+# and return patient-level processed score
+###
 def for_all_patient(data, fn_metrics, fn_model, fn_patient):
     res = {}
     for i in range(len(data)):
@@ -77,6 +124,9 @@ def for_all_patient(data, fn_metrics, fn_model, fn_patient):
     return fn_patient(res)
 
 
+############
+# datasets #
+############
 def best_dataset_per_patient(scores):
     scores = invert_dict(scores)
     for i in scores:
@@ -84,6 +134,10 @@ def best_dataset_per_patient(scores):
     return scores
 
 
+###
+# exectute patients function for all patients
+# and return datasets-level processed  score
+###
 def for_all_dataset(datas, fn_metrics, fn_model, fn_patient, fn_dataset):
     res = {}
     for i in datas:
@@ -93,6 +147,9 @@ def for_all_dataset(datas, fn_metrics, fn_model, fn_patient, fn_dataset):
     return fn_dataset(res)
 
 
+###
+# execute for_all_dataset with all data in the robo/best_out folder
+###
 def for_all(**kwargs):
     list_arg = [i.replace('output_', '').replace('.pkl', '')
                 for i in os.listdir('robo/best_out')
@@ -100,6 +157,11 @@ def for_all(**kwargs):
     return for_all_dataset(list_arg, **kwargs)
 
 
+###
+# utility for graph
+# set the axis size, the legend and the title
+# y axis is hardcoded as we have proba (0<=x<=1)
+###
 def main_set_graph(ax, length, title):
     ax.set_xlim(-0.05, length)
     ax.set_ylim(0, 1.1)
@@ -112,15 +174,17 @@ def plot_best_acc_model():
                   fn_model=get_best, fn_patient=best_patient)
     fig, ax = plt.subplots()
     for i in res:
-        values = np.array(list(res[i].values()))
-        keys = list(res[i].keys())
-        for j in range(len(next(iter(res[i].values())))):
-            ax.plot(keys, values[:, j], marker='o', label=i+' acc')
+        i_res = invert_dict(res[i])
+        for j in i_res:
+            values = list(i_res[j].values())
+            keys = list(i_res[j].keys())
+            ax.plot(keys, values, marker='o', label=i+' '+j)
     main_set_graph(ax, len(values)-0.95, 'best model each')
 
 
-def plot_avg_acc_per_patient():
-    res = for_all(fn_dataset=best_dataset_per_patient, fn_metrics=get_acc,
+def plot_max_acc_per_patient():
+    res = for_all(fn_dataset=best_dataset_per_patient,
+                  fn_metrics=partial(get_metrics, metrics=['acc']),
                   fn_model=get_best, fn_patient=best_patient)
     fig, ax = plt.subplots()
     res = invert_dict(res)
@@ -128,7 +192,7 @@ def plot_avg_acc_per_patient():
         values = np.array(list(res[i].values()))
         keys = list(res[i].keys())
         ax.plot(keys, values, marker='o', label=i)
-    main_set_graph(ax, len(values)-0.95, 'avg')
+    main_set_graph(ax, len(values)-0.95, 'max')
 
 
 if __name__ == '__main__':
