@@ -182,19 +182,26 @@ def plot_best_acc_model():
     main_set_graph(ax, len(values)-0.95, 'best model each')
 
 
-def plot_max_acc_per_patient():
-    res = for_all(fn_dataset=best_dataset_per_patient,
-                  fn_metrics=partial(get_metrics, metrics=['acc']),
-                  fn_model=get_best, fn_patient=best_patient)
+def plot_try():
+    res = for_all(fn_dataset=identity,
+                  fn_metrics=partial(get_metrics, to_gets=['acc', 'tpr']),
+                  fn_model=partial(get_for_model, to_gets=['avg']),
+                  fn_patient=best_patient)
     fig, ax = plt.subplots()
-    res = invert_dict(res)
-    for i in res:
-        values = np.array(list(res[i].values()))
-        keys = list(res[i].keys())
-        ax.plot(keys, values, marker='o', label=i)
-    main_set_graph(ax, len(values)-0.95, 'max')
+    res2 = invert_dict(res)  # patient top
+    markers = ['o', 'v', 's', 'p', 'x']
+    for m, i in enumerate(res2):
+        res2[i] = invert_dict(res2[i])   # model second
+        for m2, j in enumerate(res2[i]):
+            res2[i][j] = invert_dict(res2[i][j])  # metrics third
+            for m3, k in enumerate(res2[i][j]):
+                values = np.array(list(res2[i][j][k].values()))
+                keys = list(res2[i][j][k].keys())
+                ax.plot(keys, values, marker=markers[m3], label=i+' '+j+' '+k)
+    main_set_graph(ax, len(values)-0.95)
 
 
+    
 if __name__ == '__main__':
     args = parse_args_read()
     if args.input == 'all':
