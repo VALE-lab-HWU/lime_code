@@ -23,6 +23,31 @@ def invert_dict(scores):
     return res
 
 
+def invert_dict_level(res, lv=1):
+    if type(res) == dict:
+        if lv > 0:
+            res = invert_dict(res)
+        for i in res:
+            res[i] = invert_dict_level(res[i], lv-1)
+        return res
+    else:
+        return res
+
+
+def apply_dict_level(res, fn, lv=1):
+    if type(res) == dict:
+        if lv == 0:
+            print('lv', lv)
+            tmp = fn(res)
+        else:
+            tmp = {}
+            for i in res:
+                tmp[i] = apply_dict_level(res[i], fn, lv-1)
+        return tmp
+    else:
+        return res
+
+
 def identity(x):
     return x
 
@@ -45,9 +70,8 @@ def get_metrics(score, to_gets):
 ##########
 # models #
 ##########
-def get_fn_model(scores, fn=np.argmax, axis=0, idx=True, idx_used='acc'):
+def get_fn_model(ivd, fn=np.argmax, axis=0, idx=True, idx_used='acc'):
     res = {}
-    ivd = invert_dict(scores)
     if idx:
         tmp = np.array(list(ivd[idx_used].values()))
         tmp_idx = fn(tmp, axis=axis)
@@ -73,7 +97,7 @@ def get_average(scores):
     return get_fn_model(scores, fn=np.average, idx=False)
 
 
-LST = {'max': get_best, 'min': get_min, 'avg': get_average}
+LST = {'max': get_best, 'min': get_min, 'avg': get_average, 'all': identity}
 
 
 def get_for_model(scores, to_gets):
@@ -84,6 +108,11 @@ def get_for_model(scores, to_gets):
         else:  # ugly ... and?
             sys.exit('wrong model operator')
     return res
+
+
+def get_for_model_inv(scores, to_gets):
+    scores = invert_dict(scores)
+    return get_for_model(scores, to_gets)
 
 
 ###
@@ -104,11 +133,10 @@ def for_all_model(d, fn_metrics, fn_model):
 ############
 # patients #
 ############
-def best_patient(scores):
-    tmp = invert_dict(scores)
-    for i in tmp:
-        tmp[i] = get_best(tmp[i])
-    return {'avg': tmp}
+def get_patient(scores, to_gets=['avg']):
+    tmp = invert_dict_level(scores, lv=2)
+    tmp = apply_dict_level(tmp, partial(get_for_model, to_gets=to_gets), lv=1)
+    return tmp
 
 
 ###
@@ -130,6 +158,7 @@ def for_all_patient(data, fn_metrics, fn_model, fn_patient):
 def best_dataset_per_patient(scores):
     scores = invert_dict(scores)
     for i in scores:
+        scores[i] = invert_dict(scores[i])
         scores[i] = get_best(scores[i])
     return scores
 
@@ -169,24 +198,24 @@ def main_set_graph(ax, length, title):
     ax.set_title(title)
 
 
-def plot_best_acc_model():
-    res = for_all(fn_dataset=lambda x: x, fn_metrics=get_acc,
-                  fn_model=get_best, fn_patient=best_patient)
-    fig, ax = plt.subplots()
-    for i in res:
-        i_res = invert_dict(res[i])
-        for j in i_res:
-            values = list(i_res[j].values())
-            keys = list(i_res[j].keys())
-            ax.plot(keys, values, marker='o', label=i+' '+j)
-    main_set_graph(ax, len(values)-0.95, 'best model each')
+# def plot_best_acc_model():
+#     res = for_all(fn_dataset=lambda x: x, fn_metrics=get_acc,
+#                   fn_model=get_best, fn_patient=best_patient)
+#     fig, ax = plt.subplots()
+#     for i in res:
+#         i_res = invert_dict(res[i])
+#         for j in i_res:
+#             values = list(i_res[j].values())
+#             keys = list(i_res[j].keys())
+#             ax.plot(keys, values, marker='o', label=i+' '+j)
+#     main_set_graph(ax, len(values)-0.95, 'best model each')
 
 
 def plot_try():
     res = for_all(fn_dataset=identity,
-                  fn_metrics=partial(get_metrics, to_gets=['acc', 'tpr']),
-                  fn_model=partial(get_for_model, to_gets=['avg']),
-                  fn_patient=best_patient)
+                  fn_metrics=partial(get_metrics, to_gets=['acc']),
+                  fn_model=partial(get_for_model_inv, to_gets=['avg']),
+                  fn_patient=partial(get_patient, to_gets=['avg']))
     fig, ax = plt.subplots()
     res2 = invert_dict(res)  # patient top
     markers = ['o', 'v', 's', 'p', 'x']
@@ -198,7 +227,7 @@ def plot_try():
                 values = np.array(list(res2[i][j][k].values()))
                 keys = list(res2[i][j][k].keys())
                 ax.plot(keys, values, marker=markers[m3], label=i+' '+j+' '+k)
-    main_set_graph(ax, len(values)-0.95)
+    main_set_graph(ax, len(values)-0.95, 'title')
 
 
     
@@ -206,3 +235,7 @@ if __name__ == '__main__':
     args = parse_args_read()
     if args.input == 'all':
         pass
+
+
+    ## do invert
+    ## then apply with level argument
