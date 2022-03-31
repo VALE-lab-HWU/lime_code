@@ -46,4 +46,6 @@ def parse_2():
     argp.add_argument('-x', dest='xaxis', type=str,
                       help='what to use as x axis', default='set',
                       choices=['set', 'metric', 'patient', 'model'])
+    argp.add_argument('-g', dest='generated', type=str,
+                      help='pregenerated or not', default='no')
     return argp.parse_args()

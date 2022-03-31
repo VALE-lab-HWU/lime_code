@@ -277,23 +277,23 @@ def plot_try():
 # 1/2/3 = graph
 # last = axis
 def plot_main(args):
-    res = for_all(fn_dataset=partial(get_dataset, to_gets=args.set),
-                  fn_metrics=partial(get_metrics, to_gets=args.metric),
-                  fn_model=partial(get_for_model_inv, to_gets=args.model),
-                  fn_patient=partial(get_patient, to_gets=args.patient))
-    print('----')
-    print(args.xaxis)
+    res = for_all(fn_dataset=partial(get_dataset, to_gets=args['set']),
+                  fn_metrics=partial(get_metrics, to_gets=args['metric']),
+                  fn_model=partial(get_for_model_inv, to_gets=args['model']),
+                  fn_patient=partial(get_patient, to_gets=args['patient']))
+    # print('----')
+    # print(args['xaxis'])
     print(res)
-    if args.xaxis == 'set':
+    if args['xaxis'] == 'set':
         res = invert_dict_level(res, lv=2)
         res = invert_dict_level(res, lv=3)
         res = invert_dict_level(res, lv=3)
-    elif args.xaxis == 'model':
+    elif args['xaxis'] == 'model':
         res = invert_dict_level(res, lv=3)
-    elif args.xaxis == 'patient':
+    elif args['xaxis'] == 'patient':
         res = invert_dict_level(res, lv=1)
         res = invert_dict_level(res, lv=3)
-    elif args.xaxis == 'metric':
+    elif args['xaxis'] == 'metric':
         pass
     print(res)
     res2, depth, length = reduce_dict(res)
@@ -308,4 +308,53 @@ def plot_main(args):
 
 if __name__ == '__main__':
     args = parse_2()
-    plot_main(args)
+    if args.generated == 'no':
+        plot_main(args.__dict__)
+    else:
+        fns = {'best_md_pat':  # best model, all, patient axis
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': ['all'],
+                'model': ['max'],
+                'xaxis': 'patient'},
+               'best_md_ds':  # best model, all, set  axis
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': ['all'],
+                'model': ['max'],
+                'xaxis': 'set'},
+               'pn':  # all about one patient
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': args.patient,
+                'model': ['all'],
+                'xaxis': 'set'},
+               'sn':  # all about one set
+               {'metric': ['acc'],
+                'set': args.set,
+                'patient': ['all'],
+                'model': ['all'],
+                'xaxis': 'patient'},
+               'mdn':  # all about one model
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': ['all'],
+                'model': args.model,
+                'xaxis': 'patient'},
+               'best':
+               {'metric': ['acc', 'tpr', 'ppv', 'pre'],
+                'set': ['max'],
+                'patient': ['all'],
+                'model': ['max'],
+                'xaxis': 'patient'}
+        }
+        plot_main(fns[args.generated])
+
+
+"""
+{'metric': [''],
+'set': [''],
+'patient': [''],
+'model': [''],
+'xaxis': ''}
+"""
