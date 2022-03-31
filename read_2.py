@@ -20,7 +20,7 @@ def reduce_dict(res, a=0, b=0):
             res, a, b = reduce_dict(res)
         else:
             for i in res:
-                print('--', a, i)
+                # print('--', a, i)
                 res[i], a, b = reduce_dict(res[i])
             a += 1
         if a == 1:
@@ -52,7 +52,7 @@ def invert_dict_level(res, lv=1):
 def apply_dict_level(res, fn, lv=1, **kwargs):
     if type(res) == dict:
         if lv == 0:
-            print('lv', lv)
+            # print('lv', lv)
             tmp = fn(res, **kwargs)
         else:
             tmp = {}
@@ -124,15 +124,16 @@ LST = {'max': get_best, 'min': get_min, 'avg': get_average, 'all': identity}
 def get_for_model(scores, to_gets, **kwargs):
     res = {}
     keys = list(scores.values())[0].keys()
-    print('k', keys)
-    print('s', scores)
-    print('t', to_gets)
+    # print('k', keys)
+    # print('s', scores)
+    # print('t', to_gets)
     for to_get in to_gets:
-        print('---vt', to_get)
-        print('res b', res)
+        # print('---vt', to_get)
+        # print('res b', res)
+        # print(keys, to_get, type(list(keys)[0]), type(to_get))
         if to_get in LST:
             if to_get == 'all':
-                res = {**res, **scores}
+                res = {**res, **invert_dict_level(scores, lv=1)}
             else:
                 res[to_get] = LST[to_get](scores)
         elif to_get in keys:
@@ -142,7 +143,7 @@ def get_for_model(scores, to_gets, **kwargs):
                 res[to_get][j] = scores[j][to_get]
         else:  # ugly ... and?
             sys.exit('wrong model operator')
-        print('res a', res)
+    # print('res a', res)
     return res
 
 
@@ -158,7 +159,7 @@ def get_for_model_inv(scores, to_gets):
 def for_all_model(d, fn_metrics, fn_model):
     res = {}
     for mdl in d[0]:
-        print('Model', mdl)
+        # print('Model', mdl)
         matrix = metrics.confusion_matrix(d[1], d[0][mdl],
                                           labels=[1, 0])
         score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
@@ -182,9 +183,9 @@ def get_patient(scores, to_gets=['avg']):
 def for_all_patient(data, fn_metrics, fn_model, fn_patient):
     res = {}
     for i in range(len(data)):
-        print('Patient', i)
+        # print('Patient', i)
         d = data[i]
-        res[i] = for_all_model(d, fn_metrics, fn_model)
+        res[str(i)] = for_all_model(d, fn_metrics, fn_model)
     return fn_patient(res)
 
 
@@ -204,7 +205,7 @@ def get_dataset(scores, to_gets=['avg']):
 def for_all_dataset(datas, fn_metrics, fn_model, fn_patient, fn_dataset):
     res = {}
     for i in datas:
-        print('\nDataset', i)
+        # print('\nDataset', i)
         data = dh.read_data_pickle('robo/best_out/output_'+i+'.pkl')
         res[i] = for_all_patient(data, fn_metrics, fn_model, fn_patient)
     return fn_dataset(res)
@@ -262,13 +263,17 @@ def plot_try():
     _, _, length = reduce_dict(res2)
     fig, ax = plt.subplots()
     markers = ['o', 'v', 's', 'p', 'x', '8', '*', 'd', 'h', '1', '.', 'X']
-    apply_dict_level(res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
+    apply_dict_level(
+        res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
     main_set_graph(ax, length-0.95, 'title')
+
+
+# md : pt : st: met
 
 # model = max 3
 # patient = avg 1,3
-# metrics = acc, 2, 3, 3
-# set = it 0
+# metrics = acc, 0
+# set = it 02, 3, 3
 # 1/2/3 = graph
 # last = axis
 def plot_main(args):
@@ -276,21 +281,27 @@ def plot_main(args):
                   fn_metrics=partial(get_metrics, to_gets=args.metric),
                   fn_model=partial(get_for_model_inv, to_gets=args.model),
                   fn_patient=partial(get_patient, to_gets=args.patient))
+    print('----')
+    print(args.xaxis)
+    print(res)
     if args.xaxis == 'set':
-        pass
+        res = invert_dict_level(res, lv=2)
+        res = invert_dict_level(res, lv=3)
+        res = invert_dict_level(res, lv=3)
     elif args.xaxis == 'model':
         res = invert_dict_level(res, lv=3)
     elif args.xaxis == 'patient':
         res = invert_dict_level(res, lv=1)
         res = invert_dict_level(res, lv=3)
     elif args.xaxis == 'metric':
-        res = invert_dict_level(res, lv=2)
-        res = invert_dict_level(res, lv=3)
-        res = invert_dict_level(res, lv=3)
+        pass
+    print(res)
     res2, depth, length = reduce_dict(res)
+    print(res2)
     fig, ax = plt.subplots()
     markers = ['o', 'v', 's', 'p', 'x', '8', '*', 'd', 'h', '1', '.', 'X']
-    apply_dict_level(res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
+    apply_dict_level(
+        res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
     main_set_graph(ax, length-0.95, 'title')
     plt.show()
 

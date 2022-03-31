@@ -39,10 +39,10 @@ def parse_2():
                       default=['it'], nargs='*')
     argp.add_argument('-p', dest='patient',
                       help="the patient to use if relevant",
-                      default=['all'], nargs='*')
+                      default=['avg'], nargs='*')
     argp.add_argument('-md', dest='model', type=str,
                       help="the model to use if relevant",
-                      default=['mlp'], nargs='*')
+                      default=['max'], nargs='*')
     argp.add_argument('-x', dest='xaxis', type=str,
                       help='what to use as x axis', default='set',
                       choices=['set', 'metric', 'patient', 'model'])
