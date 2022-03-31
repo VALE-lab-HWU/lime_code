@@ -89,6 +89,18 @@ def get_metrics(score, to_gets):
 ##########
 # models #
 ##########
+
+# ensemble
+def get_ensemble(d0, ens):
+    keys = list(d0.keys())
+    init = [i[0] for i in keys]
+    pred = {}
+    for i in ens:
+        chosen = [d0[keys[init.index(j)]] for j in i]
+        pred[i] = (np.average(chosen, axis=0) >= 0.5).astype(int)
+    return pred
+
+
 def get_fn_model(ivd, fn=np.argmax, axis=0, idx=True, idx_used=None):
     if idx_used is None:
         idx_used = list(ivd.keys())[0]
@@ -125,7 +137,7 @@ def get_for_model(scores, to_gets, **kwargs):
     res = {}
     keys = list(scores.values())[0].keys()
     # print('k', keys)
-    # print('s', scores)
+    print('s', scores)
     # print('t', to_gets)
     for to_get in to_gets:
         # print('---vt', to_get)
@@ -141,6 +153,13 @@ def get_for_model(scores, to_gets, **kwargs):
                 if to_get not in res:
                     res[to_get] = {}
                 res[to_get][j] = scores[j][to_get]
+        elif to_get == 'ens':
+            for j in scores:
+                for k in scores[j]:
+                    if k.startswith('ens'):
+                        if k not in res:
+                            res[k] = {}
+                        res[k][j] = scores[j][k]
         else:  # ugly ... and?
             sys.exit('wrong model operator')
     # print('res a', res)
@@ -156,8 +175,12 @@ def get_for_model_inv(scores, to_gets):
 # exectute metrics on all score
 # and return model-level processed score
 ###
-def for_all_model(d, fn_metrics, fn_model):
+def for_all_model(d, fn_metrics, fn_model, fn_ens):
     res = {}
+    ens_data = fn_ens(d[0])
+    if ens_data is not None:
+        for i in ens_data:
+            d[0]['ens'+i] = ens_data[i]
     for mdl in d[0]:
         # print('Model', mdl)
         matrix = metrics.confusion_matrix(d[1], d[0][mdl],
@@ -180,12 +203,14 @@ def get_patient(scores, to_gets=['avg']):
 # exectute models function for all model
 # and return patient-level processed score
 ###
-def for_all_patient(data, fn_metrics, fn_model, fn_patient):
+def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient):
     res = {}
     for i in range(len(data)):
+        if i == 9:
+            continue
         # print('Patient', i)
         d = data[i]
-        res[str(i)] = for_all_model(d, fn_metrics, fn_model)
+        res[str(i)] = for_all_model(d, fn_metrics, fn_model, fn_ens)
     return fn_patient(res)
 
 
@@ -202,12 +227,14 @@ def get_dataset(scores, to_gets=['avg']):
 # exectute patients function for all patients
 # and return datasets-level processed  score
 ###
-def for_all_dataset(datas, fn_metrics, fn_model, fn_patient, fn_dataset):
+def for_all_dataset(
+        datas, fn_metrics, fn_model, fn_ens, fn_patient, fn_dataset):
     res = {}
     for i in datas:
         # print('\nDataset', i)
         data = dh.read_data_pickle('robo/best_out/output_'+i+'.pkl')
-        res[i] = for_all_patient(data, fn_metrics, fn_model, fn_patient)
+        res[i] = for_all_patient(
+            data, fn_metrics, fn_model, fn_ens, fn_patient)
     return fn_dataset(res)
 
 
@@ -250,7 +277,7 @@ def plot_test(res, ax, i, markers, m):
     i.reverse()
     values = np.array(list(res.values()))
     keys = list(res.keys())
-    ax.plot(keys, values, marker=markers[m], label=' '.join(str(j) for j in i))
+    ax.plot(keys, values, marker=markers[m % len(markers)], label=' '.join(str(j) for j in i))
 
 
 def plot_try():
@@ -280,7 +307,8 @@ def plot_main(args):
     res = for_all(fn_dataset=partial(get_dataset, to_gets=args['set']),
                   fn_metrics=partial(get_metrics, to_gets=args['metric']),
                   fn_model=partial(get_for_model_inv, to_gets=args['model']),
-                  fn_patient=partial(get_patient, to_gets=args['patient']))
+                  fn_patient=partial(get_patient, to_gets=args['patient']),
+                  fn_ens=partial(get_ensemble, ens=args['ensemble']))
     # print('----')
     # print(args['xaxis'])
     print(res)
@@ -343,6 +371,12 @@ if __name__ == '__main__':
                 'xaxis': 'patient'},
                'best':
                {'metric': ['acc', 'tpr', 'ppv', 'pre'],
+                'set': ['max'],
+                'patient': ['all'],
+                'model': ['max'],
+                'xaxis': 'patient'},
+               'ens':
+               {'metric': ['acc'],
                 'set': ['max'],
                 'patient': ['all'],
                 'model': ['max'],
