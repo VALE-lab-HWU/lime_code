@@ -26,7 +26,6 @@ def parse_args_read():
                       help='mode patient, dataset', default='p')
     argp.add_argument('-type', dest='type', type=str,
                       help='type all, avg, best', default='avg')
-    
     return argp.parse_args()
 
 
@@ -34,13 +33,17 @@ def parse_2():
     argp = argparse.ArgumentParser('arg read result')
     argp.add_argument('-m', dest='metric', type=str,
                       help="the metric to use if relevant",
-                      default='acc')
+                      default=['acc'], nargs='*')
     argp.add_argument('-s', dest='set', type=str,
                       help="the dataset to use, if relevant",
-                      default='it')
-    argp.add_argument('-p', dest='patient', type=int,
+                      default=['it'], nargs='*')
+    argp.add_argument('-p', dest='patient',
                       help="the patient to use if relevant",
-                      default=1)
-    argp.add_argument('-p', dest='patient', type=int,
-                      help="the patient to use if relevant",
-                      default=1)
+                      default=['all'], nargs='*')
+    argp.add_argument('-md', dest='model', type=str,
+                      help="the model to use if relevant",
+                      default=['mlp'], nargs='*')
+    argp.add_argument('-x', dest='xaxis', type=str,
+                      help='what to use as x axis', default='set',
+                      choices=['set', 'metric', 'patient', 'model'])
+    return argp.parse_args()

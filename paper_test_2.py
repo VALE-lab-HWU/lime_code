@@ -126,7 +126,9 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
             }
         }
     }
-    res = run_cross_validation_custom(models, X, y, shuffle=False)
+    res = []
+    for i in range(3):
+        res.append(run_cross_validation_custom(models, X, y, shuffle=False))
     save_pkl(res, global_args.name)
 
 
