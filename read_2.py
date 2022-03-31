@@ -11,6 +11,8 @@ from sklearn import metrics
 from bcolors import Bcolors
 from functools import partial
 
+P9 = False
+
 
 # general utility
 def reduce_dict(res, a=0, b=0):
@@ -145,7 +147,9 @@ def get_for_model(scores, to_gets, **kwargs):
         # print(keys, to_get, type(list(keys)[0]), type(to_get))
         if to_get in LST:
             if to_get == 'all':
-                res = {**res, **invert_dict_level(scores, lv=1)}
+                tmp = invert_dict_level(scores, lv=1)
+                res = {**res,
+                       **{i: tmp[i] for i in tmp if not i.startswith('ens')}}
             else:
                 res[to_get] = LST[to_get](scores)
         elif to_get in keys:
@@ -206,7 +210,7 @@ def get_patient(scores, to_gets=['avg']):
 def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient):
     res = {}
     for i in range(len(data)):
-        if i == 9:
+        if i == 9 and not P9:
             continue
         # print('Patient', i)
         d = data[i]
@@ -345,43 +349,56 @@ if __name__ == '__main__':
                 'patient': ['all'],
                 'model': ['max'],
                 'xaxis': 'patient'},
+               'ensemble': ['m'],
                'best_md_ds':  # best model, all, set  axis
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['all'],
                 'model': ['max'],
+                'ensemble': ['m'],
                 'xaxis': 'set'},
                'pn':  # all about one patient
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': args.patient,
                 'model': ['all'],
+                'ensemble': ['m'],
                 'xaxis': 'set'},
                'sn':  # all about one set
                {'metric': ['acc'],
                 'set': args.set,
                 'patient': ['all'],
                 'model': ['all'],
+                'ensemble': ['m'],
                 'xaxis': 'patient'},
                'mdn':  # all about one model
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['all'],
                 'model': args.model,
+                'ensemble': ['m'],
                 'xaxis': 'patient'},
                'best':
                {'metric': ['acc', 'tpr', 'ppv', 'pre'],
                 'set': ['max'],
                 'patient': ['all'],
                 'model': ['max'],
+                'ensemble': ['m'],
                 'xaxis': 'patient'},
-               'ens':
+               'ens_avg_p':
                {'metric': ['acc'],
-                'set': ['max'],
+                'set': ['all'],
+                'patient': ['avg'],
+                'model': ['ens', 'max', 'avg'],
+                'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
+                'xaxis': 'set'},
+               'ens_avg_s':
+               {'metric': ['acc'],
+                'set': ['avg'],
                 'patient': ['all'],
-                'model': ['max'],
-                'xaxis': 'patient'}
-        }
+                'model': ['ens', 'max', 'avg'],
+                'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
+                'xaxis': 'patient'}}
         plot_main(fns[args.generated])
 
 
