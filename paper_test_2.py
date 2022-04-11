@@ -57,7 +57,9 @@ def run_cross_validation_custom(fns, datas, labels, shuffle=False):
         y_train = np.concatenate([*labels[:i], *labels[i+1:]],
                                  dtype=int)
         if shuffle:
-            x_train, y_train = mlh.shuffle_arrays_of_array(x_train, y_train)
+            gen = np.random.RandomState(42)
+            x_train, y_train = mlh.shuffle_arrays_of_array(
+                x_train, y_train, gen=gen)
         x_test = datas[i]
         y_test = np.array(labels[i], dtype=int)
         # not sure random state works for this PCA

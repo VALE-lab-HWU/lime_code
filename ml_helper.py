@@ -493,8 +493,8 @@ def get_index_claffication(predicted, label, t_f=True):
 
 
 # shuffle multiple arrays in the same order
-def shuffle_arrays_of_array(*arrays):
-    perm = np.random.permutation(len(arrays[0]))
+def shuffle_arrays_of_array(*arrays, gen=np.random):
+    perm = gen.permutation(len(arrays[0]))
     return [array[perm] for array in arrays]
 
 
