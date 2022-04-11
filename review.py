@@ -51,17 +51,25 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
         R = 0.0
         G = 0.0
         B = 0.0
-    return (R, G, B, 0.7)
+    return (R, G, B, 0.8)
 
 
 DETAIL = True
 
 if __name__ == '__main__':
-    data = [['bianchetti', [(425, 475), (520, 580)]],
-            ['phipps', [(350, 430), (426, 506), (492, 592), (576, 682)]],
-            ['unger', [(350, 430), (442, 498), (514, 570), (576, 682)]],
-            ['marsden', [(370, 410), (456, 484), (517, 567)]],
-            ['jo', [(370, 410), (429.5, 474.5), (500,)]]]
+    data = [
+        ['neto2022', [(394, 522), (485, 555)]],
+        ['bianchetti2021', [(425, 475), (520, 580)]],
+        ['walsh2021', [(360, 520), (450, 650)]],
+        ['qian2021', [(360, 520), (450, 650)]],
+        ['marsden2021', [(370, 410), (456, 484), (517, 567)]],
+        ['marsden2020', [(370, 410), (456, 484), (517, 567)]],
+        ['unger2020', [(350, 430), (442, 498), (514, 570), (576, 682)]],
+        ['jo2018', [(370, 410), (429.5, 474.5), (500,)]],
+        ['sahoo2018 ???', [(400, 500)]],
+        ['phipps2017', [(350, 430), (426, 506), (492, 592), (576, 682)]],
+        ['gu2014 ???', [(400, 680)]]
+    ]
     # help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
     fig, ax = plt.subplots()
     for i in range(len(data)):
@@ -76,7 +84,7 @@ if __name__ == '__main__':
                 if DETAIL:
                     ax.scatter(x, y+1,
                                color='black', marker='|', alpha=0.8)
-                    ax.annotate(f'(>{j[0]})', (x, y+0.6),
+                    ax.annotate(f'(>{j[0]})', (x, y+0.3),
                                 fontsize=10, ha='center')
             elif len(j) == 2:
                 xs = (j[0], j[1]-j[0])
@@ -87,7 +95,7 @@ if __name__ == '__main__':
                 if DETAIL:
                     ax.scatter(x, y+1,
                                color='black', marker='|', alpha=0.8)
-                    ax.annotate(f'({xs[0]+xs[1]/2}/{xs[1]/2})', (x, y+0.6),
+                    ax.annotate(f'({xs[0]+xs[1]/2}/{xs[1]/2})', (x, y+0.3),
                                 fontsize=10, ha='center')
             else:
                 print('wtf')
