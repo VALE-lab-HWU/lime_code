@@ -67,7 +67,7 @@ def run_cross_validation_custom(fns, datas, labels, shuffle=False):
         predicted = {}
         for name in fns:
             predicted[name] = mh.run_model(
-                pca_x_train, y_train, pca_x_test,
+                pca_x_train, y_train, pca_x_test, proba=True,
                 model_fn=fns[name]['model'], **fns[name]['kwargs'])
         res.append((predicted, y_test))
     return res
@@ -122,7 +122,8 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
             'model': mh.build_svc_model,
             'kwargs': {
                 'C': 10,
-                'gamma': 0.001
+                'gamma': 0.001,
+                'probability': True
             }
         }
     }

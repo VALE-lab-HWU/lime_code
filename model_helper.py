@@ -54,11 +54,14 @@ def get_model(x_train, y_train, model_fn=build_mlp_model, **kwargs):
 
 
 # train and test a model
-def run_model(x_train, y_train, test, save_model=False, **kwargs):
+def run_model(x_train, y_train, test, save_model=False, proba=False, **kwargs):
     print('Fit model')
     model = get_model(x_train, y_train, **kwargs)
     print('Test model')
-    predict = model.predict(test)
+    if proba:
+        predict = model.predict_proba(test)
+    else:
+        predict = model.predict(test)
     if save_model:
         return predict, model
     else:
