@@ -51,25 +51,49 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
         R = 0.0
         G = 0.0
         B = 0.0
-    return (R, G, B, A)
+    return (R, G, B, 0.7)
 
 
-data = [['bianchetti', [(425, 475), (520, 580)]],
-        ['phipps', [(350, 430), (426, 506), (492, 592), (576, 682)]],
-        ['unger', [(350, 430), (442, 498), (514, 570), (576, 682)]],
-        ['marsden', [(370, 410), (456, 484), (517, 567)]],
-        ['jo', [(370, 410), (429.5, 474.5), (500, 750)]]]
+DETAIL = True
 
-# help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
-fig, ax = plt.subplots()
-for i in range(len(data)):
-    d = data[i][1]
-    for j in d:
-        xs = (j[0], j[1]-j[0])
-        ax.broken_barh(
-            [xs], (i*3, 2), facecolors=wavelength_to_rgb(xs[0]+xs[1]/2))
-ax.set_xlim(300, 900)
-ax.set_ylim(-1, len(data)*3)
-ax.set_xlabel('nm')
-ax.set_yticks([i*3+1 for i in range(len(data))])
-ax.set_yticklabels([i[0]for i in data])
+if __name__ == '__main__':
+    data = [['bianchetti', [(425, 475), (520, 580)]],
+            ['phipps', [(350, 430), (426, 506), (492, 592), (576, 682)]],
+            ['unger', [(350, 430), (442, 498), (514, 570), (576, 682)]],
+            ['marsden', [(370, 410), (456, 484), (517, 567)]],
+            ['jo', [(370, 410), (429.5, 474.5), (500,)]]]
+    # help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
+    fig, ax = plt.subplots()
+    for i in range(len(data)):
+        d = data[i][1]
+        for j in d:
+            if len(j) == 1:
+                l = 750-j[0]
+                x = j[0] + l/2
+                y = i*3
+                ax.broken_barh([(j[0], l)], (y, 2),
+                               facecolors=wavelength_to_rgb(j[0]))
+                if DETAIL:
+                    ax.scatter(x, y+1,
+                               color='black', marker='|', alpha=0.8)
+                    ax.annotate(f'(>{j[0]})', (x, y+0.6),
+                                fontsize=10, ha='center')
+            elif len(j) == 2:
+                xs = (j[0], j[1]-j[0])
+                x = xs[0]+xs[1]/2
+                y = i*3
+                ax.broken_barh([xs], (y, 2),
+                               facecolors=wavelength_to_rgb(x))
+                if DETAIL:
+                    ax.scatter(x, y+1,
+                               color='black', marker='|', alpha=0.8)
+                    ax.annotate(f'({xs[0]+xs[1]/2}/{xs[1]/2})', (x, y+0.6),
+                                fontsize=10, ha='center')
+            else:
+                print('wtf')
+    ax.set_xlim(300, 900)
+    ax.set_ylim(-1, len(data)*3)
+    ax.set_xlabel('nm')
+    ax.set_yticks([i*3+1 for i in range(len(data))])
+    ax.set_yticklabels([i[0]for i in data])
+    plt.show()
