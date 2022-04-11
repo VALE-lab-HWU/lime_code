@@ -50,4 +50,6 @@ def parse_2():
                       help='what to use for ensemble', default=['mskr'])
     argp.add_argument('-g', dest='generated', type=str,
                       help='pregenerated or not', default='no')
+    argp.add_argument('-c', dest='cross', type=bool,
+                      help='cross or not', default=False)
     return argp.parse_args()

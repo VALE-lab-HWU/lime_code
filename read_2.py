@@ -73,6 +73,22 @@ def identity(x):
     return x
 
 
+# cross validation utility
+def cross_concat(data):
+    res = []
+    for j in range(len(data[0])):  # patient number
+        res2 = []
+        tmp = {}
+        for md in data[0][j][0]:
+            tmp[md] = []
+            for i in range(len(data)):  # cross number
+                tmp[md].append(data[i][j][0][md])
+        res2.append(tmp)
+        res2.append(data[0][j][1])  # append ground truth
+        res.append(res2)
+    return res
+
+
 ###########
 # metrics #
 ###########
@@ -98,7 +114,8 @@ def get_ensemble(d0, ens):
     init = [i[0] for i in keys]
     pred = {}
     for i in ens:
-        chosen = [d0[keys[init.index(j)]] for j in i]
+        chosen = np.array([d0[keys[init.index(j)]] for j in i])
+        chosen.reshape(np.product(chosen.shape[:-1]), chosen.shape[-1])
         pred[i] = (np.average(chosen, axis=0) >= 0.5).astype(int)
     return pred
 
@@ -179,18 +196,29 @@ def get_for_model_inv(scores, to_gets):
 # exectute metrics on all score
 # and return model-level processed score
 ###
-def for_all_model(d, fn_metrics, fn_model, fn_ens):
+def for_all_model(d, fn_metrics, fn_model, fn_ens, cross):
     res = {}
     ens_data = fn_ens(d[0])
     if ens_data is not None:
         for i in ens_data:
             d[0]['ens'+i] = ens_data[i]
     for mdl in d[0]:
+        if cross:
+            tmp = []
+            for i in d[0][mdl]:
+                matrix = metrics.confusion_matrix(d[1], i,
+                                                  labels=[1, 0])
+                score = mlh.get_score_verbose_2(i, d[1], matrix)
+                tmp.append(fn_metrics(score))
+            print(tmp)
+            for met in tmp[0]:
+                res[mdl] = {met: np.average([j[met] for j in tmp])}
+        else:
         # print('Model', mdl)
-        matrix = metrics.confusion_matrix(d[1], d[0][mdl],
-                                          labels=[1, 0])
-        score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
-        res[mdl] = fn_metrics(score)
+            matrix = metrics.confusion_matrix(d[1], d[0][mdl],
+                                              labels=[1, 0])
+            score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
+            res[mdl] = fn_metrics(score)
     return fn_model(res)
 
 
@@ -207,14 +235,14 @@ def get_patient(scores, to_gets=['avg']):
 # exectute models function for all model
 # and return patient-level processed score
 ###
-def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient):
+def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient, cross):
     res = {}
     for i in range(len(data)):
         if i == 9 and not P9:
             continue
         # print('Patient', i)
         d = data[i]
-        res[str(i)] = for_all_model(d, fn_metrics, fn_model, fn_ens)
+        res[str(i)] = for_all_model(d, fn_metrics, fn_model, fn_ens, cross)
     return fn_patient(res)
 
 
@@ -232,13 +260,16 @@ def get_dataset(scores, to_gets=['avg']):
 # and return datasets-level processed  score
 ###
 def for_all_dataset(
-        datas, fn_metrics, fn_model, fn_ens, fn_patient, fn_dataset):
+        datas, name, fn_metrics, fn_model, fn_ens,
+        fn_patient, fn_dataset, cross):
     res = {}
     for i in datas:
         # print('\nDataset', i)
-        data = dh.read_data_pickle('robo/best_out/output_'+i+'.pkl')
+        data = dh.read_data_pickle(name+'/output_'+i+'.pkl')
+        if cross:
+            data = cross_concat(data)
         res[i] = for_all_patient(
-            data, fn_metrics, fn_model, fn_ens, fn_patient)
+            data, fn_metrics, fn_model, fn_ens, fn_patient, cross)
     return fn_dataset(res)
 
 
@@ -246,10 +277,14 @@ def for_all_dataset(
 # execute for_all_dataset with all data in the robo/best_out folder
 ###
 def for_all(**kwargs):
+    if kwargs['cross']:
+        name = 'robo/best_out_3'
+    else:
+        name = 'robo/best_out'
     list_arg = [i.replace('output_', '').replace('.pkl', '')
-                for i in os.listdir('robo/best_out')
+                for i in os.listdir(name)
                 if i.startswith('output_')]
-    return for_all_dataset(list_arg, **kwargs)
+    return for_all_dataset(list_arg, name, **kwargs)
 
 
 ###
@@ -298,6 +333,10 @@ def plot_try():
         res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
     main_set_graph(ax, length-0.95, 'title')
 
+# fn_dataset=partial(get_dataset, to_gets=args['set'])
+# fn_metrics=partial(get_metrics, to_gets=args['metric'])
+# fn_model=partial(get_for_model_inv, to_gets=args['model'])
+# fn_ens=partial(get_ensemble, ens=args['ensemble'])
 
 # md : pt : st: met
 
@@ -312,7 +351,8 @@ def plot_main(args):
                   fn_metrics=partial(get_metrics, to_gets=args['metric']),
                   fn_model=partial(get_for_model_inv, to_gets=args['model']),
                   fn_patient=partial(get_patient, to_gets=args['patient']),
-                  fn_ens=partial(get_ensemble, ens=args['ensemble']))
+                  fn_ens=partial(get_ensemble, ens=args['ensemble']),
+                  cross=args['cross'])
     # print('----')
     # print(args['xaxis'])
     print(res)
@@ -348,57 +388,73 @@ if __name__ == '__main__':
                 'set': ['all'],
                 'patient': ['all'],
                 'model': ['max'],
-                'xaxis': 'patient'},
-               'ensemble': ['m'],
+                'xaxis': 'patient',
+                'ensemble': ['m'],
+                'cross': False},
                'best_md_ds':  # best model, all, set  axis
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['all'],
                 'model': ['max'],
                 'ensemble': ['m'],
-                'xaxis': 'set'},
+                'xaxis': 'set',
+                'cross': False},
                'pn':  # all about one patient
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': args.patient,
                 'model': ['all'],
                 'ensemble': ['m'],
-                'xaxis': 'set'},
+                'xaxis': 'set',
+                'cross': False},
                'sn':  # all about one set
                {'metric': ['acc'],
                 'set': args.set,
                 'patient': ['all'],
                 'model': ['all'],
                 'ensemble': ['m'],
-                'xaxis': 'patient'},
+                'xaxis': 'patient',
+                'cross': False},
                'mdn':  # all about one model
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['all'],
                 'model': args.model,
                 'ensemble': ['m'],
-                'xaxis': 'patient'},
+                'xaxis': 'patient',
+                'cross': False},
                'best':
                {'metric': ['acc', 'tpr', 'ppv', 'pre'],
                 'set': ['max'],
                 'patient': ['all'],
                 'model': ['max'],
                 'ensemble': ['m'],
-                'xaxis': 'patient'},
+                'xaxis': 'patient',
+                'cross': False},
                'ens_avg_p':
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['avg'],
                 'model': ['ens', 'max', 'avg'],
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
-                'xaxis': 'set'},
+                'xaxis': 'set',
+                'cross': False},
                'ens_avg_s':
                {'metric': ['acc'],
                 'set': ['avg'],
                 'patient': ['all'],
                 'model': ['ens', 'max', 'avg'],
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
-                'xaxis': 'patient'}}
+                'xaxis': 'patient',
+                'cross': False},
+               'prez':
+               {'metric': ['acc'],
+                'set': ['avg'],
+                'patient': ['all'],
+                'model': ['ens', 'mlp', 'rf', 'svm'],
+                'ensemble': ['mrs'],
+                'xaxis': 'patient',
+                'cross': False}}
         plot_main(fns[args.generated])
 
 
