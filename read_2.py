@@ -414,8 +414,30 @@ def plot_auc(args):
                 if args.proba:
                     tmp = tmp[:, :, 1]
                 y_pred = tmp.mean(axis=0)
-                RocCurveDisplay.from_predictions(y_true, y_pred,
-                                                 ax=ax, name=f'{mdl} p{i}')
+                RocCurveDisplay.from_predictions(
+                    y_true, y_pred, ax=ax, name=f'{mdl} p{i}')
+    elif args.auct == 'sm':
+        name = get_name(args.cross, args.proba)
+        data = dh.read_data_pickle(name+'/output_'+args.set[0]+'.pkl')
+        if args.cross:
+            data = cross_concat(data)
+        fig, ax = plt.subplots()
+        for mdl in args.model:
+            y_pred = []
+            y_true = []  # recomputing each turn, but eh
+            for i in range(len(data)):
+                if i == 9 and not P9:
+                    continue
+                tmp = np.array(data[i][0][mdl])
+                if args.proba:
+                    tmp = tmp[:, :, 1]
+                tmp = tmp.mean(axis=0)
+                y_pred.extend(tmp)
+                y_true.extend(data[i][1])
+            RocCurveDisplay.from_predictions(
+                y_true, y_pred, ax=ax, name=f'{mdl}')
+    elif args.auct == 'ms':
+        pass
     plt.show()
 
 
