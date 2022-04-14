@@ -109,14 +109,16 @@ def get_metrics(score, to_gets):
 ##########
 
 # ensemble
-def get_ensemble(d0, ens):
+def get_ensemble(d0, ens, proba):
     keys = list(d0.keys())
     init = [i[0] for i in keys]
     pred = {}
     for i in ens:
         chosen = np.array([d0[keys[init.index(j)]] for j in i])
         chosen.reshape(np.product(chosen.shape[:-1]), chosen.shape[-1])
-        pred[i] = (np.average(chosen, axis=0) >= 0.5).astype(int)
+        pred[i] = np.average(chosen, axis=0)
+        if not proba:
+            pred[i] = (pred[i] >= 0.5).astype(int)
     return pred
 
 
@@ -137,7 +139,7 @@ def get_fn_model(ivd, fn=np.argmax, axis=0, idx=True, idx_used=None):
     return res
 
 
-def get_best(scores):
+def get_max(scores):
     return get_fn_model(scores)
 
 
@@ -149,14 +151,14 @@ def get_average(scores):
     return get_fn_model(scores, fn=np.average, idx=False)
 
 
-LST = {'max': get_best, 'min': get_min, 'avg': get_average, 'all': identity}
+LST = {'max': get_max, 'min': get_min, 'avg': get_average, 'all': identity}
 
 
 def get_for_model(scores, to_gets, **kwargs):
     res = {}
     keys = list(scores.values())[0].keys()
     # print('k', keys)
-    print('s', scores)
+    # print('s', scores)
     # print('t', to_gets)
     for to_get in to_gets:
         # print('---vt', to_get)
@@ -196,25 +198,30 @@ def get_for_model_inv(scores, to_gets):
 # exectute metrics on all score
 # and return model-level processed score
 ###
-def for_all_model(d, fn_metrics, fn_model, fn_ens, cross):
+def for_all_model(d, fn_metrics, fn_model, fn_ens, cross, proba):
     res = {}
-    ens_data = fn_ens(d[0])
+    ens_data = fn_ens(d[0], proba=proba)
     if ens_data is not None:
         for i in ens_data:
             d[0]['ens'+i] = ens_data[i]
     for mdl in d[0]:
         if cross:
-            tmp = []
-            for i in d[0][mdl]:
-                matrix = metrics.confusion_matrix(d[1], i,
-                                                  labels=[1, 0])
-                score = mlh.get_score_verbose_2(i, d[1], matrix)
-                tmp.append(fn_metrics(score))
-            print(tmp)
-            for met in tmp[0]:
-                res[mdl] = {met: np.average([j[met] for j in tmp])}
+            if proba:
+                mean = np.array(d[0][mdl])[:, :, 1].mean(axis=0)
+            else:
+                mean = np.array(d[0][mdl]).mean(axis=0)
+            mean = mean >= 0.5
+            matrix = metrics.confusion_matrix(d[1], mean,
+                                              labels=[1, 0])
+            score = mlh.get_score_verbose_2(mean, d[1], matrix)
+            metric = fn_metrics(score)
+            # print(tmp)
+            res[mdl] = metric
         else:
-        # print('Model', mdl)
+            # print('Model', mdl)
+            tmp = d[0][mdl]
+            if proba:
+                tmp = tmp[:, 0]
             matrix = metrics.confusion_matrix(d[1], d[0][mdl],
                                               labels=[1, 0])
             score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
@@ -235,14 +242,16 @@ def get_patient(scores, to_gets=['avg']):
 # exectute models function for all model
 # and return patient-level processed score
 ###
-def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient, cross):
+def for_all_patient(data, fn_metrics, fn_model, fn_ens, fn_patient,
+                    cross, proba):
     res = {}
     for i in range(len(data)):
         if i == 9 and not P9:
             continue
         # print('Patient', i)
         d = data[i]
-        res[str(i)] = for_all_model(d, fn_metrics, fn_model, fn_ens, cross)
+        res[str(i)] = for_all_model(
+            d, fn_metrics, fn_model, fn_ens, cross, proba)
     return fn_patient(res)
 
 
@@ -261,7 +270,7 @@ def get_dataset(scores, to_gets=['avg']):
 ###
 def for_all_dataset(
         datas, name, fn_metrics, fn_model, fn_ens,
-        fn_patient, fn_dataset, cross):
+        fn_patient, fn_dataset, cross, proba):
     res = {}
     for i in datas:
         # print('\nDataset', i)
@@ -269,7 +278,7 @@ def for_all_dataset(
         if cross:
             data = cross_concat(data)
         res[i] = for_all_patient(
-            data, fn_metrics, fn_model, fn_ens, fn_patient, cross)
+            data, fn_metrics, fn_model, fn_ens, fn_patient, cross, proba)
     return fn_dataset(res)
 
 
@@ -277,7 +286,9 @@ def for_all_dataset(
 # execute for_all_dataset with all data in the robo/best_out folder
 ###
 def for_all(**kwargs):
-    if kwargs['cross']:
+    if kwargs['proba']:
+        name = 'robo/best_idk'
+    elif kwargs['cross']:
         name = 'robo/best_out_3'
     else:
         name = 'robo/best_out'
@@ -301,7 +312,7 @@ def main_set_graph(ax, length, title):
 
 # def plot_best_acc_model():
 #     res = for_all(fn_dataset=lambda x: x, fn_metrics=get_acc,
-#                   fn_model=get_best, fn_patient=best_patient)
+#                   fn_model=get_max, fn_patient=best_patient)
 #     fig, ax = plt.subplots()
 #     for i in res:
 #         i_res = invert_dict(res[i])
@@ -347,15 +358,17 @@ def plot_try():
 # 1/2/3 = graph
 # last = axis
 def plot_main(args):
+    print(args)
     res = for_all(fn_dataset=partial(get_dataset, to_gets=args['set']),
                   fn_metrics=partial(get_metrics, to_gets=args['metric']),
                   fn_model=partial(get_for_model_inv, to_gets=args['model']),
                   fn_patient=partial(get_patient, to_gets=args['patient']),
                   fn_ens=partial(get_ensemble, ens=args['ensemble']),
-                  cross=args['cross'])
+                  cross=args['cross'],
+                  proba=args['proba'])
     # print('----')
     # print(args['xaxis'])
-    print(res)
+    # print(res)
     if args['xaxis'] == 'set':
         res = invert_dict_level(res, lv=2)
         res = invert_dict_level(res, lv=3)
@@ -367,9 +380,9 @@ def plot_main(args):
         res = invert_dict_level(res, lv=3)
     elif args['xaxis'] == 'metric':
         pass
-    print(res)
+    # print(res)
     res2, depth, length = reduce_dict(res)
-    print(res2)
+    # print(res2)
     fig, ax = plt.subplots()
     markers = ['o', 'v', 's', 'p', 'x', '8', '*', 'd', 'h', '1', '.', 'X']
     apply_dict_level(
@@ -390,7 +403,8 @@ if __name__ == '__main__':
                 'model': ['max'],
                 'xaxis': 'patient',
                 'ensemble': ['m'],
-                'cross': False},
+                'cross': True,
+                'proba': args.proba},
                'best_md_ds':  # best model, all, set  axis
                {'metric': ['acc'],
                 'set': ['all'],
@@ -398,7 +412,8 @@ if __name__ == '__main__':
                 'model': ['max'],
                 'ensemble': ['m'],
                 'xaxis': 'set',
-                'cross': False},
+                'cross': True,
+                'proba': args.proba},
                'pn':  # all about one patient
                {'metric': ['acc'],
                 'set': ['all'],
@@ -406,7 +421,8 @@ if __name__ == '__main__':
                 'model': ['all'],
                 'ensemble': ['m'],
                 'xaxis': 'set',
-                'cross': False},
+                'cross': True,
+                'proba': args.proba},
                'sn':  # all about one set
                {'metric': ['acc'],
                 'set': args.set,
@@ -414,7 +430,8 @@ if __name__ == '__main__':
                 'model': ['all'],
                 'ensemble': ['m'],
                 'xaxis': 'patient',
-                'cross': False},
+                'cross': True,
+                'proba': args.proba},
                'mdn':  # all about one model
                {'metric': ['acc'],
                 'set': ['all'],
@@ -422,31 +439,35 @@ if __name__ == '__main__':
                 'model': args.model,
                 'ensemble': ['m'],
                 'xaxis': 'patient',
-                'cross': False},
-               'best':
-               {'metric': ['acc', 'tpr', 'ppv', 'pre'],
+                'cross': True,
+                'proba': args.proba},
+               'best':  # best of all
+               {'metric': ['acc', 'tpr', 'tnr'],
                 'set': ['max'],
                 'patient': ['all'],
                 'model': ['max'],
                 'ensemble': ['m'],
                 'xaxis': 'patient',
-                'cross': False},
-               'ens_avg_p':
+                'cross': True,
+                'proba': args.proba},
+               'ens_avg_p':  # ens avg patient
                {'metric': ['acc'],
                 'set': ['all'],
                 'patient': ['avg'],
                 'model': ['ens', 'max', 'avg'],
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
                 'xaxis': 'set',
-                'cross': False},
-               'ens_avg_s':
+                'cross': True,
+                'proba': args.proba},
+               'ens_avg_s':  # ens avg set
                {'metric': ['acc'],
                 'set': ['avg'],
                 'patient': ['all'],
                 'model': ['ens', 'max', 'avg'],
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
                 'xaxis': 'patient',
-                'cross': False},
+                'cross': True,
+                'proba': args.proba},
                'prez':
                {'metric': ['acc'],
                 'set': ['avg'],
@@ -454,14 +475,54 @@ if __name__ == '__main__':
                 'model': ['ens', 'mlp', 'rf', 'svm'],
                 'ensemble': ['mrs'],
                 'xaxis': 'patient',
-                'cross': False}}
+                'cross': True,
+                'proba': args.proba},
+               'ens':
+               {'metric': ['acc'],
+                'set': ['it', 'it_b1', 'it_b2'],
+                'patient': ['all'],
+                'model': ['ens'],
+                'ensemble': ['rk'],
+                'xaxis': 'patient',
+                'cross': True,
+                'proba': args.proba},
+               'avg_p':
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': ['avg'],
+                'model': ['all', 'max', 'ens'],
+                'ensemble': ['mrk'],
+                'xaxis': 'set',
+                'cross': True,
+                'proba': args.proba},
+               'avg_pe':
+               {'metric': ['acc'],
+                'set': ['all'],
+                'patient': ['avg'],
+                'model': ['max', 'ens'],
+                'ensemble': ['mrsk', 'mrk', 'mrs', 'mks', 'rsk', 'mr'],
+                'xaxis': 'set',
+                'cross': True,
+                'proba': args.proba},
+               'ens_it':
+               {'metric': ['acc'],
+                'set': ['all', 'avg', 'max'],
+                'patient': ['all'],
+                'model': ['ens'],
+                'ensemble': ['mrs'],
+                'xaxis': 'patient',
+                'cross': True,
+                'proba': args.proba}}
         plot_main(fns[args.generated])
 
 
 """
 {'metric': [''],
-'set': [''],
-'patient': [''],
-'model': [''],
-'xaxis': ''}
+ 'set': [''],
+ 'patient': [''],
+ 'model': [],
+ 'ensemble': [''],
+ 'xaxis': 'patient',
+ 'cross': True,
+'proba': args.proba}
 """

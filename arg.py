@@ -51,5 +51,7 @@ def parse_2():
     argp.add_argument('-g', dest='generated', type=str,
                       help='pregenerated or not', default='no')
     argp.add_argument('-c', dest='cross', type=bool,
-                      help='cross or not', default=False)
+                      help='cross or not', default=True)
+    argp.add_argument('-pr', dest='proba', type=bool,
+                      help='proba or not', default=False)
     return argp.parse_args()
