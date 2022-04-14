@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import ListedColormap
 
 
 def wavelength_to_rgb(wavelength, gamma=0.8):
@@ -56,50 +58,63 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
 
 DETAIL = True
 
+CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
+
+
 if __name__ == '__main__':
     data = [
-        ['neto2022', [(394, 522), (485, 555)]],
-        ['bianchetti2021', [(425, 475), (520, 580)]],
-        ['walsh2021', [(360, 520), (450, 650)]],
-        ['qian2021', [(360, 520), (450, 650)]],
-        ['marsden2021', [(370, 410), (456, 484), (517, 567)]],
-        ['marsden2020', [(370, 410), (456, 484), (517, 567)]],
-        ['unger2020', [(350, 430), (442, 498), (514, 570), (576, 682)]],
-        ['jo2018', [(370, 410), (429.5, 474.5), (500,)]],
-        ['sahoo2018 ???', [(400, 500)]],
-        ['phipps2017', [(350, 430), (426, 506), (492, 592), (576, 682)]],
-        ['gu2014 ???', [(400, 680)]]
+        ['neto2022', [(458, '/', 64), (520, '/', 35)]],
+        ['bianchetti2021', [(425, '-', 475), (520, '-', 580)]],
+        ['walsh2021', [(440, '/', 80), (550, '/', 100)]],
+        ['qian2021', [(440, '/', 80), (550, '/', 100)]],
+        ['marsden2021', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]],
+        ['marsden2020', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]],
+        ['unger2020', [(390, '/', 40), (470, '/', 28), (542, '/', 28),
+                       (629, '/', 53)]],
+        ['jo2018', [(390, '±', 20), (452, '±', 22.5), (500, '>')]],
+        ['sahoo2018', [(400, '>')]],
+        ['phipps2017', [(390, '/', 40), (466, '/', 40), (542, '/', 50),
+                       (629, '/', 53)]],
+        ['gu2014', [(400, '-', 680)]]
     ]
     # help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
     fig, ax = plt.subplots()
     for i in range(len(data)):
         d = data[i][1]
         for j in d:
-            if len(j) == 1:
-                l = 750-j[0]
-                x = j[0] + l/2
-                y = i*3
-                ax.broken_barh([(j[0], l)], (y, 2),
-                               facecolors=wavelength_to_rgb(j[0]))
-                if DETAIL:
-                    ax.scatter(x, y+1,
-                               color='black', marker='|', alpha=0.8)
-                    ax.annotate(f'(>{j[0]})', (x, y+0.3),
-                                fontsize=10, ha='center')
-            elif len(j) == 2:
-                xs = (j[0], j[1]-j[0])
-                x = xs[0]+xs[1]/2
-                y = i*3
-                ax.broken_barh([xs], (y, 2),
-                               facecolors=wavelength_to_rgb(x))
-                if DETAIL:
-                    ax.scatter(x, y+1,
-                               color='black', marker='|', alpha=0.8)
-                    ax.annotate(f'({xs[0]+xs[1]/2}/{xs[1]/2})', (x, y+0.3),
-                                fontsize=10, ha='center')
+            y = i*3
+            if j[1] == '-':
+                xs = (j[0], j[2])
+                x = (xs[0]+xs[1])/2
+                color = x
+                detail = f'({j[0]}-{j[2]})'
+            elif j[1] == '/':
+                x = j[0]
+                xs = (x-j[2]/2, x+j[2]/2)
+                color = x
+                detail = f'({j[0]}/{j[2]})'
+            elif j[1] == '±':
+                x = j[0]
+                xs = (x-j[2], x+j[2])
+                color = x
+                detail = f'({j[0]}±{j[2]})'
+            elif j[1] == '>':
+                xs = (j[0], 750)
+                x = (j[0] + 750)/2
+                color = x
+                detail = f'(>{j[0]})'
             else:
                 print('wtf')
-    ax.set_xlim(300, 900)
+            ax.imshow([np.array(range(round(xs[0]-380),
+                                      round(xs[1]-379))) / 370],
+                      extent=(xs[0], xs[1], y, y+2), vmin=0, vmax=1, cmap=CMAP,
+                      aspect="auto")
+            if DETAIL:
+                ax.scatter(x, y+1,
+                           color='black', marker='|', alpha=0.8)
+                ax.annotate(detail, (x, y+0.3),
+                            fontsize=10, ha='center')
+    ax.set_xlim(310, 770)
     ax.set_ylim(-1, len(data)*3)
     ax.set_xlabel('nm')
     ax.set_yticks([i*3+1 for i in range(len(data))])
