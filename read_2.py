@@ -10,6 +10,7 @@ import numpy as np
 from sklearn import metrics
 from bcolors import Bcolors
 from functools import partial
+from sklearn.metrics import RocCurveDisplay
 
 P9 = False
 
@@ -285,13 +286,18 @@ def for_all_dataset(
 ###
 # execute for_all_dataset with all data in the robo/best_out folder
 ###
-def for_all(**kwargs):
-    if kwargs['proba']:
+def get_name(cross, proba):
+    if proba:
         name = 'robo/best_idk'
-    elif kwargs['cross']:
+    elif cross:
         name = 'robo/best_out_3'
     else:
         name = 'robo/best_out'
+    return name
+
+
+def for_all(**kwargs):
+    name = get_name(kwargs['cross'], kwargs['proba'])
     list_arg = [i.replace('output_', '').replace('.pkl', '')
                 for i in os.listdir(name)
                 if i.startswith('output_')]
@@ -391,9 +397,33 @@ def plot_main(args):
     plt.show()
 
 
+def plot_auc(args):
+    if args.auct == 'sp':
+        name = get_name(args.cross, args.proba)
+        data = dh.read_data_pickle(name+'/output_'+args.set[0]+'.pkl')
+        if args.cross:
+            data = cross_concat(data)
+        fig, ax = plt.subplots()
+        for i in range(len(data)):
+            if i == 9 and not P9:
+                continue
+            y_true = data[i][1]
+            print(i)
+            for mdl in args.model:
+                tmp = np.array(data[i][0][mdl])
+                if args.proba:
+                    tmp = tmp[:, :, 1]
+                y_pred = tmp.mean(axis=0)
+                RocCurveDisplay.from_predictions(y_true, y_pred,
+                                                 ax=ax, name=f'{mdl} p{i}')
+    plt.show()
+
+
 if __name__ == '__main__':
     args = parse_2()
-    if args.generated == 'no':
+    if args.auc:
+        plot_auc(args)
+    elif args.generated == 'no':
         plot_main(args.__dict__)
     else:
         fns = {'best_md_pat':  # best model, all, patient axis
