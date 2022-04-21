@@ -3,6 +3,12 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 
 
+plt.style.use('dark_background')
+plt.rcParams.update({
+    "figure.facecolor": "#444",
+    "axes.facecolor": "#444"})
+
+
 def wavelength_to_rgb(wavelength, gamma=0.8):
     ''' taken from http://www.noah.org/wiki/Wavelength_to_RGB_in_Python
     This converts a given wavelength of light to an
@@ -59,7 +65,7 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
 DETAIL = True
 
 CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
-
+# CMAP = plt.get_cmap('turbo')
 
 if __name__ == '__main__':
     data = [
@@ -111,7 +117,7 @@ if __name__ == '__main__':
                       aspect="auto")
             if DETAIL:
                 ax.scatter(x, y+1,
-                           color='black', marker='|', alpha=0.8)
+                           color='white', marker='|', alpha=0.8)
                 ax.annotate(detail, (x, y+0.3),
                             fontsize=10, ha='center')
     ax.set_xlim(310, 770)
