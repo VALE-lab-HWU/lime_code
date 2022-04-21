@@ -293,6 +293,7 @@ def get_name(cross, proba):
         name = 'robo/best_out_3'
     else:
         name = 'robo/best_out'
+    print(name)
     return name
 
 
@@ -413,7 +414,8 @@ def plot_auc(args):
                 tmp = np.array(data[i][0][mdl])
                 if args.proba:
                     tmp = tmp[:, :, 1]
-                y_pred = tmp.mean(axis=0)
+                if args.cross:
+                    y_pred = tmp.mean(axis=0)
                 RocCurveDisplay.from_predictions(
                     y_true, y_pred, ax=ax, name=f'{mdl} p{i}')
     elif args.auct == 'ms':
@@ -430,19 +432,29 @@ def plot_auc(args):
             if args.cross:
                 data = cross_concat(data)
             for mdl in args.model:
-                y_pred = []
-                y_true = []  # recomputing each turn, but eh
+                y_pred = {}
+                y_true = {}  # recomputing each turn, but eh
                 for i in range(len(data)):
                     if i == 9 and not P9:
                         continue
-                    tmp = np.array(data[i][0][mdl])
-                    if args.proba:
-                        tmp = tmp[:, :, 1]
-                    tmp = tmp.mean(axis=0)
-                    y_pred.extend(tmp)
-                    y_true.extend(data[i][1])
-                RocCurveDisplay.from_predictions(
-                    y_true, y_pred, ax=ax, name=f'{mdl} {ds}')
+                    if mdl == 'ens':
+                        tmp = get_ensemble(data[i][0], proba=args.proba,
+                                           ens=args.ensemble)
+                    else:
+                        tmp = {' ': np.array(data[i][0][mdl])}
+                    for j in tmp:
+                        if args.proba:
+                            tmp[j] = tmp[j][:, :, 1]
+                        if args.cross:
+                            tmp[j] = tmp[j].mean(axis=0)
+                        if j not in y_pred:
+                            y_pred[j] = []
+                            y_true[j] = []
+                        y_pred[j].extend(tmp[j])
+                        y_true[j].extend(data[i][1])
+                for j in y_pred:
+                    RocCurveDisplay.from_predictions(
+                        y_true[j], y_pred[j], ax=ax, name=f'{mdl} {ds} {j}')
     plt.show()
 
 

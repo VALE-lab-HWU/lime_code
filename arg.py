@@ -50,11 +50,15 @@ def parse_2():
                       help='what to use for ensemble', default=['mskr'])
     argp.add_argument('-g', dest='generated', type=str,
                       help='pregenerated or not', default='no')
-    argp.add_argument('-c', dest='cross', type=bool,
-                      help='cross or not', default=True)
-    argp.add_argument('-pr', dest='proba', type=bool,
-                      help='proba or not', default=False)
-    argp.add_argument('-auc', dest='auc', type=bool, help='auc', default=False)
+    argp.add_argument('-c', dest='cross', action='store_true')
+    argp.add_argument('-no-c', dest='cross', action='store_false')
+    argp.set_defaults(cross=True)
+    argp.add_argument('-pr', dest='proba', action='store_true')
+    argp.add_argument('-no-pr', dest='proba', action='store_false')
+    argp.set_defaults(proba=False)
+    argp.add_argument('-auc', dest='auc', action='store_true')
+    argp.add_argument('-no-auc', dest='auc', action='store_false')
+    argp.set_defaults(auc=False)
     argp.add_argument('-auct', dest='auct', type=str,
                       help='what type of auc', default='sp',
                       choices=['sp', 'ms'])
