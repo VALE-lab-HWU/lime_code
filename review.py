@@ -119,7 +119,7 @@ if __name__ == '__main__':
                 ax.scatter(x, y+1,
                            color='white', marker='|', alpha=0.8)
                 ax.annotate(detail, (x, y+0.3),
-                            fontsize=10, ha='center')
+                            fontsize=10, ha='center', weight='bold')
     ax.set_xlim(310, 770)
     ax.set_ylim(-1, len(data)*3)
     ax.set_xlabel('nm')
