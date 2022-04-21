@@ -416,28 +416,33 @@ def plot_auc(args):
                 y_pred = tmp.mean(axis=0)
                 RocCurveDisplay.from_predictions(
                     y_true, y_pred, ax=ax, name=f'{mdl} p{i}')
-    elif args.auct == 'sm':
-        name = get_name(args.cross, args.proba)
-        data = dh.read_data_pickle(name+'/output_'+args.set[0]+'.pkl')
-        if args.cross:
-            data = cross_concat(data)
-        fig, ax = plt.subplots()
-        for mdl in args.model:
-            y_pred = []
-            y_true = []  # recomputing each turn, but eh
-            for i in range(len(data)):
-                if i == 9 and not P9:
-                    continue
-                tmp = np.array(data[i][0][mdl])
-                if args.proba:
-                    tmp = tmp[:, :, 1]
-                tmp = tmp.mean(axis=0)
-                y_pred.extend(tmp)
-                y_true.extend(data[i][1])
-            RocCurveDisplay.from_predictions(
-                y_true, y_pred, ax=ax, name=f'{mdl}')
     elif args.auct == 'ms':
-        pass
+        name = get_name(args.cross, args.proba)
+        fig, ax = plt.subplots()
+        if args.set[0] == 'all':
+            list_arg = [i.replace('output_', '').replace('.pkl', '')
+                        for i in os.listdir(name)
+                        if i.startswith('output_')]
+        else:
+            list_arg = args.set
+        for ds in list_arg:
+            data = dh.read_data_pickle(name+'/output_'+ds+'.pkl')
+            if args.cross:
+                data = cross_concat(data)
+            for mdl in args.model:
+                y_pred = []
+                y_true = []  # recomputing each turn, but eh
+                for i in range(len(data)):
+                    if i == 9 and not P9:
+                        continue
+                    tmp = np.array(data[i][0][mdl])
+                    if args.proba:
+                        tmp = tmp[:, :, 1]
+                    tmp = tmp.mean(axis=0)
+                    y_pred.extend(tmp)
+                    y_true.extend(data[i][1])
+                RocCurveDisplay.from_predictions(
+                    y_true, y_pred, ax=ax, name=f'{mdl} {ds}')
     plt.show()
 
 

@@ -54,8 +54,8 @@ def parse_2():
                       help='cross or not', default=True)
     argp.add_argument('-pr', dest='proba', type=bool,
                       help='proba or not', default=False)
-    argp.add_argument('-auc', dest='auc', type=bool, help='auc')
+    argp.add_argument('-auc', dest='auc', type=bool, help='auc', default=False)
     argp.add_argument('-auct', dest='auct', type=str,
                       help='what type of auc', default='sp',
-                      choices=['sp', 'sm', 'ms'])
+                      choices=['sp', 'ms'])
     return argp.parse_args()
