@@ -286,8 +286,10 @@ def for_all_dataset(
 ###
 # execute for_all_dataset with all data in the robo/best_out folder
 ###
-def get_name(cross, proba):
-    if proba:
+def get_name(cross, proba, shuffle):
+    if shuffle:
+        name = 'robo/best_3_shuffle'
+    elif proba:
         name = 'robo/best_idk'
     elif cross:
         name = 'robo/best_out_3'
@@ -297,8 +299,8 @@ def get_name(cross, proba):
     return name
 
 
-def for_all(**kwargs):
-    name = get_name(kwargs['cross'], kwargs['proba'])
+def for_all(shuffle, **kwargs):
+    name = get_name(kwargs['cross'], kwargs['proba'], shuffle)
     list_arg = [i.replace('output_', '').replace('.pkl', '')
                 for i in os.listdir(name)
                 if i.startswith('output_')]
@@ -372,7 +374,8 @@ def plot_main(args):
                   fn_patient=partial(get_patient, to_gets=args['patient']),
                   fn_ens=partial(get_ensemble, ens=args['ensemble']),
                   cross=args['cross'],
-                  proba=args['proba'])
+                  proba=args['proba'],
+                  shuffle=args['shuffle'])
     # print('----')
     # print(args['xaxis'])
     # print(res)
@@ -400,7 +403,7 @@ def plot_main(args):
 
 def plot_auc(args):
     if args.auct == 'sp':
-        name = get_name(args.cross, args.proba)
+        name = get_name(args.cross, args.proba, args.shuffle)
         data = dh.read_data_pickle(name+'/output_'+args.set[0]+'.pkl')
         if args.cross:
             data = cross_concat(data)
@@ -419,7 +422,7 @@ def plot_auc(args):
                 RocCurveDisplay.from_predictions(
                     y_true, y_pred, ax=ax, name=f'{mdl} p{i}')
     elif args.auct == 'ms':
-        name = get_name(args.cross, args.proba)
+        name = get_name(args.cross, args.proba, args.shuffle)
         fig, ax = plt.subplots()
         if args.set[0] == 'all':
             list_arg = [i.replace('output_', '').replace('.pkl', '')
@@ -440,6 +443,10 @@ def plot_auc(args):
                     if mdl == 'ens':
                         tmp = get_ensemble(data[i][0], proba=args.proba,
                                            ens=args.ensemble)
+                    elif mdl == 'all':
+                        tmp = data[i][0]
+                        for k in tmp:
+                            tmp[k] = np.array(tmp[k])
                     else:
                         tmp = {' ': np.array(data[i][0][mdl])}
                     for j in tmp:
@@ -473,7 +480,8 @@ if __name__ == '__main__':
                 'xaxis': 'patient',
                 'ensemble': ['m'],
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'best_md_ds':  # best model, all, set  axis
                {'metric': ['acc'],
                 'set': ['all'],
@@ -482,7 +490,8 @@ if __name__ == '__main__':
                 'ensemble': ['m'],
                 'xaxis': 'set',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'pn':  # all about one patient
                {'metric': ['acc'],
                 'set': ['all'],
@@ -491,7 +500,8 @@ if __name__ == '__main__':
                 'ensemble': ['m'],
                 'xaxis': 'set',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'sn':  # all about one set
                {'metric': ['acc'],
                 'set': args.set,
@@ -500,7 +510,8 @@ if __name__ == '__main__':
                 'ensemble': ['m'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'mdn':  # all about one model
                {'metric': ['acc'],
                 'set': ['all'],
@@ -509,7 +520,8 @@ if __name__ == '__main__':
                 'ensemble': ['m'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'best':  # best of all
                {'metric': ['acc', 'tpr', 'tnr'],
                 'set': ['max'],
@@ -518,7 +530,8 @@ if __name__ == '__main__':
                 'ensemble': ['m'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'ens_avg_p':  # ens avg patient
                {'metric': ['acc'],
                 'set': ['all'],
@@ -527,7 +540,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
                 'xaxis': 'set',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'ens_avg_s':  # ens avg set
                {'metric': ['acc'],
                 'set': ['avg'],
@@ -536,7 +550,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrks', 'mrs', 'mks', 'mrk', 'skr'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'prez':
                {'metric': ['acc'],
                 'set': ['avg'],
@@ -545,7 +560,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrs'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'ens':
                {'metric': ['acc'],
                 'set': ['it', 'it_b1', 'it_b2'],
@@ -554,7 +570,8 @@ if __name__ == '__main__':
                 'ensemble': ['rk'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'avg_p':
                {'metric': ['acc'],
                 'set': ['all'],
@@ -563,7 +580,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrk'],
                 'xaxis': 'set',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'avg_pe':
                {'metric': ['acc'],
                 'set': ['all'],
@@ -572,7 +590,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrsk', 'mrk', 'mrs', 'mks', 'rsk', 'mr'],
                 'xaxis': 'set',
                 'cross': True,
-                'proba': args.proba},
+                'proba': args.proba,
+                'shuffle': args.shuffle},
                'ens_it':
                {'metric': ['acc'],
                 'set': ['all', 'avg', 'max'],
@@ -581,7 +600,8 @@ if __name__ == '__main__':
                 'ensemble': ['mrs'],
                 'xaxis': 'patient',
                 'cross': True,
-                'proba': args.proba}}
+                'proba': args.proba,
+                'shuffle': args.shuffle}}
         plot_main(fns[args.generated])
 
 
@@ -593,5 +613,6 @@ if __name__ == '__main__':
  'ensemble': [''],
  'xaxis': 'patient',
  'cross': True,
-'proba': args.proba}
+'proba': args.proba,
+                'shuffle': args.shuffle}
 """

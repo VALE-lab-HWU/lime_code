@@ -62,4 +62,7 @@ def parse_2():
     argp.add_argument('-auct', dest='auct', type=str,
                       help='what type of auc', default='sp',
                       choices=['sp', 'ms'])
+    argp.add_argument('-shu', dest='shuffle', action='store_true')
+    argp.add_argument('-no-shu', dest='shu', action='store_false')
+    argp.set_defaults(shuffle=False)
     return argp.parse_args()
