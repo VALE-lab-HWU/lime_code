@@ -68,61 +68,95 @@ CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
 # CMAP = plt.get_cmap('turbo')
 
 if __name__ == '__main__':
-    data = [
-        ['neto2022', [(458, '/', 64), (520, '/', 35)]],
-        ['bianchetti2021', [(425, '-', 475), (520, '-', 580)]],
-        ['walsh2021', [(440, '/', 80), (550, '/', 100)]],
-        ['qian2021', [(440, '/', 80), (550, '/', 100)]],
-        ['marsden2021', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]],
-        ['marsden2020', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]],
-        ['unger2020', [(390, '/', 40), (470, '/', 28), (542, '/', 28),
-                       (629, '/', 53)]],
-        ['jo2018', [(390, '±', 20), (452, '±', 22.5), (500, '>')]],
-        ['sahoo2018', [(400, '>')]],
-        ['phipps2017', [(390, '/', 40), (466, '/', 40), (542, '/', 50),
-                       (629, '/', 53)]],
-        ['gu2014', [(400, '-', 680)]]
-    ]
+    data = {
+        #  breast cancer
+        'breast cancer': [
+            ['bianchetti2021', [(425, '-', 475), (520, '-', 580)]],
+            ['unger2020', [(390, '/', 40), (470, '/', 28), (542, '/', 28),
+                           (629, '/', 53)]],
+            ['phipps2017', [(390, '/', 40), (466, '/', 40), (542, '/', 50),
+                            (629, '/', 53)]]
+        ],
+        #  oral cancer
+        'oral cancer': [
+            ['marsden2020', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]],
+            ['jo2018', [(390, '±', 20), (452, '±', 22.5), (500, '>')]]
+        ],
+        #  cervical cancer
+        'cervical cancer': [
+            ['sahoo2018', [(400, '>')]],
+            ['gu2014', [(400, '-', 680)]]
+        ],
+        #  cell
+        'cell': [
+            ['neto2022', [(458, '/', 64), (520, '/', 35)]],
+            ['walsh2021', [(440, '/', 80), (550, '/', 100)]],
+            ['qian2021', [(440, '/', 80), (550, '/', 100)]],
+        ],
+        #  paprathyroid
+        'parathyroid': [
+            ['marsden2021', [(390, '±', 20), (470, '±', 14), (542, '±', 25)]]
+        ],
+    }
+    total_len = sum([len(data[i]) for i in data])
     # help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
     fig, ax = plt.subplots()
-    for i in range(len(data)):
-        d = data[i][1]
-        for j in d:
-            y = i*3
-            if j[1] == '-':
-                xs = (j[0], j[2])
-                x = (xs[0]+xs[1])/2
-                color = x
-                detail = f'({j[0]}-{j[2]})'
-            elif j[1] == '/':
-                x = j[0]
-                xs = (x-j[2]/2, x+j[2]/2)
-                color = x
-                detail = f'({j[0]}/{j[2]})'
-            elif j[1] == '±':
-                x = j[0]
-                xs = (x-j[2], x+j[2])
-                color = x
-                detail = f'({j[0]}±{j[2]})'
-            elif j[1] == '>':
-                xs = (j[0], 750)
-                x = (j[0] + 750)/2
-                color = x
-                detail = f'(>{j[0]})'
-            else:
-                print('wtf')
-            ax.imshow([np.array(range(round(xs[0]-380),
-                                      round(xs[1]-379))) / 370],
-                      extent=(xs[0], xs[1], y, y+2), vmin=0, vmax=1, cmap=CMAP,
-                      aspect="auto")
-            if DETAIL:
-                ax.scatter(x, y+1,
-                           color='white', marker='|', alpha=0.8)
-                ax.annotate(detail, (x, y+0.3),
-                            fontsize=10, ha='center', weight='bold')
-    ax.set_xlim(310, 770)
-    ax.set_ylim(-1, len(data)*3)
+    count = 0
+    for i, (k, v) in enumerate(data.items()):
+        for j in range(len(v)):
+            d = v[j][1]
+            for wave in d:
+                y = count*2
+                if wave[1] == '-':
+                    xs = (wave[0], wave[2])
+                    x = (xs[0]+xs[1])/2
+                    color = x
+                    detail = f'({wave[0]}-{wave[2]})'
+                elif wave[1] == '/':
+                    x = wave[0]
+                    xs = (x-wave[2]/2, x+wave[2]/2)
+                    color = x
+                    detail = f'({wave[0]}/{wave[2]})'
+                elif wave[1] == '±':
+                    x = wave[0]
+                    xs = (x-wave[2], x+wave[2])
+                    color = x
+                    detail = f'({wave[0]}±{wave[2]})'
+                elif wave[1] == '>':
+                    xs = (wave[0], 750)
+                    x = (wave[0] + 750)/2
+                    color = x
+                    detail = f'(>{wave[0]})'
+                else:
+                    print('wtf')
+                ax.imshow([np.array(range(round(xs[0]-380),
+                                          round(xs[1]-379))) / 370],
+                          extent=(xs[0], xs[1], y, y+1.9), vmin=0, vmax=1,
+                          cmap=CMAP, aspect="auto", zorder=1)
+                if DETAIL:
+                    ax.scatter(x, y+1,
+                               color='white', marker='|', alpha=0.8, zorder=2)
+                    ax.annotate(detail, (x, y+0.3), fontsize=10,
+                                ha='center', weight='bold', zorder=2)
+            count += 1
+        ax.imshow([[i]],
+                  extent=(310, 770, ((count-1-j)*2), y+1.9),
+                  vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
+                  cmap=plt.get_cmap('Paired'), zorder=0)
+        print(count, j, i)
+    ax.set_xlim(360, 760)
+    ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
-    ax.set_yticks([i*3+1 for i in range(len(data))])
-    ax.set_yticklabels([i[0]for i in data])
+    ax.set_yticks([i*2+1 for i in range(total_len)])
+    ax.set_yticklabels([j[0] for i in data for j in data[i]])
+    ax2 = ax.twinx()
+    d_len = np.array([len(data[i]) for i in data])
+    ax2.set_yticks((np.cumsum(d_len) - d_len/2)*2)
+    ax2.set_yticklabels(data.keys())
+    ax2.set_ylim(0, total_len*2)
     plt.show()
+
+
+def testa(x):
+    print(x)
+    return x
