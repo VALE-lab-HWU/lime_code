@@ -59,7 +59,7 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
         R = 0.0
         G = 0.0
         B = 0.0
-    return (R, G, B, 0.8)
+    return (R, G, B, 1)
 
 
 DETAIL = True
@@ -182,18 +182,18 @@ if __name__ == '__main__':
     # patches.reverse()
     # ax.legend(handles=patches)
     ### columns
-    # columns = [(370, 410), (400, 492), (500, 600, 540),
-    #            (602.5, 655.5), (610, 730), (500, 570)]
-    # for c in columns:
-    #     if len(c) == 3:
-    #         color = c[2]
-    #     else:
-    #         color = (c[0] + c[1])/2
-    #     ax.imshow([[color]],
-    #               extent=(c[0], c[1], 0, total_len*3),
-    #               vmin=380, vmax=750,
-    #               aspect='auto', alpha=0.2,
-    #               cmap=CMAP, zorder=0)
+    columns = [(370, 410), (400, 492), (500, 600, 540),
+               (602.5, 655.5), (610, 730), (500, 570)]
+    for c in columns:
+        if len(c) == 3:
+            color = c[2]
+        else:
+            color = (c[0] + c[1])/2
+        ax.imshow([[color]],
+                  extent=(c[0], c[1], 0, total_len*3),
+                  vmin=380, vmax=750,
+                  aspect='auto', alpha=0.2,
+                  cmap=CMAP, zorder=0)
     plt.show()
 
 
