@@ -65,4 +65,7 @@ def parse_2():
     argp.add_argument('-shu', dest='shuffle', action='store_true')
     argp.add_argument('-no-shu', dest='shu', action='store_false')
     argp.set_defaults(shuffle=False)
+    argp.add_argument('-gu', dest='guesses', action='store_true')
+    argp.add_argument('-no-gu', dest='guesses', action='store_false')
+    argp.set_defaults(guesses=False)
     return argp.parse_args()
