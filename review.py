@@ -155,35 +155,45 @@ if __name__ == '__main__':
 
             count += 1
         ax.imshow([[i]],
-                  extent=(340, 360, ((count-1-j)*2), y+1.9),
+                  extent=(320, 360, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(340, 760)
+    ax.set_xlim(320, 760)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
     ax.set_yticks([i*2+1 for i in range(total_len)])
     ax.set_yticklabels([j[0] for i in data for j in data[i]])
+    d_len = np.array([len(data[i]) for i in data])
+    ticks = (np.cumsum(d_len) - d_len/2)*2
+    ### right axis
     # ax2 = ax.twinx()
-    # d_len = np.array([len(data[i]) for i in data])
-    # ax2.set_yticks((np.cumsum(d_len) - d_len/2)*2)
+    # ax2.set_yticks(ticks)
     # ax2.set_yticklabels(data.keys())
     # ax2.set_ylim(0, total_len*2)
-    patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)), label=k)
-               for i, k in enumerate(data)]
-    patches.reverse()
-    ax.legend(handles=patches)
-    columns = [(370, 410), (400, 492), (500, 600, 540), (602.5, 655.5), (610, 730), (500, 570)]
-    for c in columns:
-        if len(c) == 3:
-            color = c[2]
-        else:
-            color = (c[0] + c[1])/2
-        ax.imshow([[color]],
-                  extent=(c[0], c[1], 0, total_len*3),
-                  vmin=380, vmax=750,
-                  aspect='auto', alpha=0.2,
-                  cmap=CMAP, zorder=0)
+    ### right annotate
+    for i, k in enumerate(data):
+        ax.annotate(k, (340, ticks[i]-0.3), fontsize=10,
+                    ha='center', weight='bold', zorder=2)
+    ### legend
+    # patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)),
+    #                           label=k)
+    #            for i, k in enumerate(data)]
+    # patches.reverse()
+    # ax.legend(handles=patches)
+    ### columns
+    # columns = [(370, 410), (400, 492), (500, 600, 540),
+    #            (602.5, 655.5), (610, 730), (500, 570)]
+    # for c in columns:
+    #     if len(c) == 3:
+    #         color = c[2]
+    #     else:
+    #         color = (c[0] + c[1])/2
+    #     ax.imshow([[color]],
+    #               extent=(c[0], c[1], 0, total_len*3),
+    #               vmin=380, vmax=750,
+    #               aspect='auto', alpha=0.2,
+    #               cmap=CMAP, zorder=0)
     plt.show()
 
 
