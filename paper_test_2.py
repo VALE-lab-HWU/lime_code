@@ -124,7 +124,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
             'model': mh.build_svc_model,
             'kwargs': {
                 'C': 10,
-                'gamma': 0.001,
+                'gamma': 10,
                 'probability': True
             }
         }
