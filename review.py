@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
-
+import matplotlib.patches as mpatches
 
 plt.style.use('dark_background')
 plt.rcParams.update({
@@ -69,6 +69,14 @@ CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
 
 if __name__ == '__main__':
     data = {
+        'lungs cancer': [
+            ['wang2020fluorescence', [(500, '-', 570, 'BAC2'),
+                                      (610, '-', 730, 'BAC3')]],
+            ['wang2020deep', [(500, '-', 570, 'BAC2'),
+                              (610, '-', 730, 'BAC3')]],
+            ['wang2021fluorescence', [(500, '-', 570, 'BAC2'),
+                                      (610, '-', 730, 'BAC3')]],
+        ],
         #  breast cancer
         'breast cancer': [
             ['bianchetti2021', [(425, '-', 475, 'NAD(P)H'),
@@ -134,9 +142,8 @@ if __name__ == '__main__':
                     detail = f'(>{wave[0]})'
                 else:
                     print('wtf')
-                ax.imshow([np.array(range(round(xs[0]-380),
-                                          round(xs[1]-379))) / 370],
-                          extent=(xs[0], xs[1], y, y+1.9), vmin=0, vmax=1,
+                ax.imshow([range(round(xs[0]), round(xs[1]))],
+                          extent=(xs[0], xs[1], y, y+1.9), vmin=380, vmax=750,
                           cmap=CMAP, aspect="auto", zorder=1)
                 if DETAIL:
                     ax.scatter(x, y+1,
@@ -148,20 +155,35 @@ if __name__ == '__main__':
 
             count += 1
         ax.imshow([[i]],
-                  extent=(310, 770, ((count-1-j)*2), y+1.9),
+                  extent=(340, 360, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(360, 760)
+    ax.set_xlim(340, 760)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
     ax.set_yticks([i*2+1 for i in range(total_len)])
     ax.set_yticklabels([j[0] for i in data for j in data[i]])
-    ax2 = ax.twinx()
-    d_len = np.array([len(data[i]) for i in data])
-    ax2.set_yticks((np.cumsum(d_len) - d_len/2)*2)
-    ax2.set_yticklabels(data.keys())
-    ax2.set_ylim(0, total_len*2)
+    # ax2 = ax.twinx()
+    # d_len = np.array([len(data[i]) for i in data])
+    # ax2.set_yticks((np.cumsum(d_len) - d_len/2)*2)
+    # ax2.set_yticklabels(data.keys())
+    # ax2.set_ylim(0, total_len*2)
+    patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)), label=k)
+               for i, k in enumerate(data)]
+    patches.reverse()
+    ax.legend(handles=patches)
+    columns = [(370, 410), (400, 492), (500, 600, 540), (602.5, 655.5), (610, 730), (500, 570)]
+    for c in columns:
+        if len(c) == 3:
+            color = c[2]
+        else:
+            color = (c[0] + c[1])/2
+        ax.imshow([[color]],
+                  extent=(c[0], c[1], 0, total_len*3),
+                  vmin=380, vmax=750,
+                  aspect='auto', alpha=0.2,
+                  cmap=CMAP, zorder=0)
     plt.show()
 
 
