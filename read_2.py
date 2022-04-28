@@ -360,6 +360,7 @@ def plot_try():
 
 # md : pt : st: met
 
+
 # model = max 3
 # patient = avg 1,3
 # metrics = acc, 0
@@ -398,6 +399,46 @@ def plot_main(args):
     apply_dict_level(
         res2, plot_test, lv=depth-1, ax=ax, markers=markers, i=[], m=0)
     main_set_graph(ax, length-0.95, 'title')
+    plt.show()
+
+
+def plot_guesses(args):
+    name = get_name(args.cross, args.proba, args.shuffle)
+    data = dh.read_data_pickle(name+'/output_'+args.set[0]+'.pkl')
+    if args.cross:
+        data = cross_concat(data)
+    mdls = {}
+    truth = []
+    for pi, d in enumerate(data):
+        if pi == 9 and not P9:
+            continue
+        truth.extend(d[1])
+        for mdl in d[0]:
+            if mdl not in mdls:
+                mdls[mdl] = []
+            if args.cross:
+                mdls[mdl].extend(
+                    (np.mean(d[0][mdl], axis=0) >= 0.5).astype(int))
+            else:
+                mdls[mdl].extend(d[0][mdl])
+    chars = [[i[0] if j else '' for j in mdls[i]] for i in mdls]
+    chars.append([str(i) for i in truth])
+    chars = np.char.array(chars)
+    #  why numpy, why
+    char_data = chars[4] + chars[0] + chars[1] + chars[2] + chars[3]
+    label, value = np.unique(char_data, return_counts=1)
+    datas = list(zip(label, value))
+    datas.sort(key=lambda g: (g[0][0], len(g[0])))
+    fig, ax = plt.subplots()
+    for i, (l, v) in enumerate(datas):
+        if l[0] == '0':
+            color = plt.get_cmap('OrRd')(len(l)*50)
+        else:
+            color = plt.get_cmap('YlGn')(len(l)*50)
+        cont = ax.bar(x=i, height=v, color=color)
+        ax.bar_label(cont, labels=[v])
+    ax.set_xticks(range(len(datas)))
+    ax.set_xticklabels([i for i, _ in datas])
     plt.show()
 
 
@@ -469,6 +510,8 @@ if __name__ == '__main__':
     args = parse_2()
     if args.auc:
         plot_auc(args)
+    elif args.guesses:
+        plot_guesses(args)
     elif args.generated == 'no':
         plot_main(args.__dict__)
     else:
