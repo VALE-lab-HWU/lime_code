@@ -68,4 +68,7 @@ def parse_2():
     argp.add_argument('-gu', dest='guesses', action='store_true')
     argp.add_argument('-no-gu', dest='guesses', action='store_false')
     argp.set_defaults(guesses=False)
+    argp.add_argument('-svm', dest='svm', action='store_true')
+    argp.add_argument('-no-svm', dest='svm', action='store_false')
+    argp.set_defaults(svm=False)
     return argp.parse_args()
