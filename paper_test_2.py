@@ -125,7 +125,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
             'kwargs': {
                 'C': 10,
                 'gamma': 10,
-                'probability': True
+                'probability': False
             }
         }
     }
