@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from copy import deepcopy
 import process_helper as ph
+import data_helper as dh
 import re
 import math
 ####
@@ -508,6 +509,16 @@ def get_subset_patient(data, label, patient, p_idx):
     datas = np.array(datas, dtype=object)
     lbs = np.array(lbs, dtype=object)
     return datas, lbs
+
+
+def split_on_patients(data, label, patient, split=3):
+    p_idx = dh.get_patient_dict(patient)
+    split_data = get_subset_patient(data, label, patient, p_idx)
+    x_train, y_train = np.concatenate(split_data[0][:-split]), \
+        np.concatenate(split_data[1][:-split])
+    x_test, y_test = np.concatenate(split_data[0][-split:]), \
+        np.concatenate(split_data[1][-split:])
+    return x_train, y_train, x_test, y_test
 
 
 ####
