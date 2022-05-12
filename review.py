@@ -3,9 +3,9 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 import matplotlib.patches as mpatches
 
-plt.style.use('dark_background')
+#plt.style.use('dark_background')
 plt.rcParams.update({
-    "figure.facecolor": "#444",
+#    "figure.facecolor": "#FFF",
     "axes.facecolor": "#444"})
 
 
@@ -145,25 +145,32 @@ if __name__ == '__main__':
                 ax.imshow([range(round(xs[0]), round(xs[1]))],
                           extent=(xs[0], xs[1], y, y+1.9), vmin=380, vmax=750,
                           cmap=CMAP, aspect="auto", zorder=1)
+                ax.annotate(v[j][0], (320, y+0.8), fontsize=14,
+                            ha='center', zorder=2)
                 if DETAIL:
                     ax.scatter(x, y+1,
-                               color='white', marker='|', alpha=0.8, zorder=2)
-                    ax.annotate(detail, (x, y+0.3), fontsize=10,
-                                ha='center', weight='bold', zorder=2)
-                    ax.annotate(wave[3], (x, y+1.4), fontsize=10,
+                               color='black', marker='|', alpha=0.8, zorder=2)
+                    ax.annotate(detail, (x, y+0.3), fontsize=14,
+                                ha='center', zorder=2)
+                    ax.annotate(wave[3], (x, y+1.4), fontsize=14,
                                 ha='center', weight='bold', zorder=2)
 
             count += 1
+        # color
         ax.imshow([[i]],
-                  extent=(320, 360, ((count-1-j)*2), y+1.9),
+                  extent=(280, 360, ((count-1-j)*2), y+1.9),
+                  vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
+                  cmap=plt.get_cmap('Paired'), zorder=0)
+        ax.imshow([[i]],
+                  extent=(760, 820, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(320, 760)
+    ax.set_xlim(280, 820)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
-    ax.set_yticks([i*2+1 for i in range(total_len)])
-    ax.set_yticklabels([j[0] for i in data for j in data[i]])
+    #ax.set_yticks([i*2+1 for i in range(total_len)])
+    #ax.set_yticklabels([j[0] for i in data for j in data[i]])
     d_len = np.array([len(data[i]) for i in data])
     ticks = (np.cumsum(d_len) - d_len/2)*2
     ### right axis
@@ -173,17 +180,16 @@ if __name__ == '__main__':
     # ax2.set_ylim(0, total_len*2)
     ### right annotate
     for i, k in enumerate(data):
-        ax.annotate(k, (340, ticks[i]-0.3), fontsize=10,
-                    ha='center', weight='bold', zorder=2)
+        ax.annotate(k, (790, ticks[i]-0.3), fontsize=16,
+                    ha='center', zorder=2)
     ### legend
     # patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)),
     #                           label=k)
     #            for i, k in enumerate(data)]
     # patches.reverse()
-    # ax.legend(handles=patches)
+    #ax.legend(handles=patches)
     ### columns
-    columns = [(370, 410), (400, 492), (500, 600, 540),
-               (602.5, 655.5), (610, 730), (500, 570)]
+    columns = [(370, 410), (400, 492), (500, 600, 540), (602.5, 730)]
     for c in columns:
         if len(c) == 3:
             color = c[2]
