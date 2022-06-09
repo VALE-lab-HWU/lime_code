@@ -70,11 +70,11 @@ CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
 if __name__ == '__main__':
     data = {
         'lungs cancer': [
-            ['wang2020fluorescence', [(500, '-', 570, 'BAC2'),
-                                      (610, '-', 730, 'BAC3')]],
-            ['wang2020deep', [(500, '-', 570, 'BAC2'),
+            # ['wang2020fluorescence', [(500, '-', 570, 'BAC2'),
+            #                           (610, '-', 730, 'BAC3')]],
+            ['wang2020', [(500, '-', 570, 'BAC2'),
                               (610, '-', 730, 'BAC3')]],
-            ['wang2021fluorescence', [(500, '-', 570, 'BAC2'),
+            ['wang2021', [(500, '-', 570, 'BAC2'),
                                       (610, '-', 730, 'BAC3')]],
         ],
         #  breast cancer
@@ -92,12 +92,26 @@ if __name__ == '__main__':
             ['marsden2020', [(390, '±', 20, 'Collagen'),
                              (470, '±', 14, 'NADH'), (542, '±', 25, 'FAD')]],
             ['jo2018', [(390, '±', 20, 'Collagen'), (452, '±', 22.5, 'NADH'),
-                        (500, '>', 0, 'FAD')]]
+                        (500, '>', 0, 'FAD')]],
+            ['duran2021', [(390, '±', 20, 'Collagen'), (452, '±', 22, 'NADH'),
+                           (500, '>', 0, 'FAD')]],
         ],
         #  cervical cancer
         'cervical cancer': [
             ['sahoo2018', [(400, '>', 0, '?')]],
             ['gu2014', [(400, '-', 680, '?')]]
+        ],
+        'skin cancer': [
+            ['cosci2016', [(420, '±', 20, 'NADH'), (514, '±', 15, 'FAD')]],
+            ['romano2020', [(390, '±', 20, 'Collagen'), (452, '±', 22, 'NADH'),
+                           (496, '>', 0, 'FAD')]],
+        ],
+        'brain cancer': [
+            ['butte2011', [(360, '-', 550, '?')]]
+        ],
+        'oropharyngeal cancer': [
+            ['weyers', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
+                        (542, '±', 25, 'FAD'), (629, '±', 26.5, 'Porphyrin')]]
         ],
         #  cell
         'cell': [
@@ -145,28 +159,28 @@ if __name__ == '__main__':
                 ax.imshow([range(round(xs[0]), round(xs[1]))],
                           extent=(xs[0], xs[1], y, y+1.9), vmin=380, vmax=750,
                           cmap=CMAP, aspect="auto", zorder=1)
-                ax.annotate(v[j][0], (320, y+0.8), fontsize=14,
+                ax.annotate(v[j][0], (330, y+0.8), fontsize=14,
                             ha='center', zorder=2)
                 if DETAIL:
                     ax.scatter(x, y+1,
                                color='black', marker='|', alpha=0.8, zorder=2)
                     ax.annotate(detail, (x, y+0.3), fontsize=14,
                                 ha='center', zorder=2)
-                    ax.annotate(wave[3], (x, y+1.4), fontsize=14,
+                    ax.annotate(wave[3], (x, y+1.4), fontsize=13,
                                 ha='center', weight='bold', zorder=2)
 
             count += 1
         # color
         ax.imshow([[i]],
-                  extent=(280, 360, ((count-1-j)*2), y+1.9),
+                  extent=(300, 360, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         ax.imshow([[i]],
-                  extent=(760, 820, ((count-1-j)*2), y+1.9),
+                  extent=(760, 860, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(280, 820)
+    ax.set_xlim(300, 860)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
     #ax.set_yticks([i*2+1 for i in range(total_len)])
@@ -180,7 +194,7 @@ if __name__ == '__main__':
     # ax2.set_ylim(0, total_len*2)
     ### right annotate
     for i, k in enumerate(data):
-        ax.annotate(k, (790, ticks[i]-0.3), fontsize=16,
+        ax.annotate(k, (810, ticks[i]-0.3), fontsize=16,
                     ha='center', zorder=2)
     ### legend
     # patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)),
@@ -189,7 +203,7 @@ if __name__ == '__main__':
     # patches.reverse()
     #ax.legend(handles=patches)
     ### columns
-    columns = [(370, 410), (400, 492), (500, 600, 540), (602.5, 730)]
+    columns = [(370, 410), (400, 490), (496, 600, 540), (602.5, 750), (602.5, 655.5)]
     for c in columns:
         if len(c) == 3:
             color = c[2]
