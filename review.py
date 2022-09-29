@@ -9,6 +9,7 @@ plt.rcParams.update({
     "axes.facecolor": "#444"})
 
 
+# https://stackoverflow.com/a/44960748/8040287
 def wavelength_to_rgb(wavelength, gamma=0.8):
     ''' taken from http://www.noah.org/wiki/Wavelength_to_RGB_in_Python
     This converts a given wavelength of light to an
@@ -62,6 +63,19 @@ def wavelength_to_rgb(wavelength, gamma=0.8):
     return (R, G, B, 1)
 
 
+# https://stackoverflow.com/a/3943023/8040287
+def get_readable_color(r, g, b):
+    if (r*0.299 + g*0.587 + b*0.114) > 0.60:
+        return 0, 0, 0
+    else:
+        return 1, 1, 1
+
+
+def get_readable_color_wavelength(wavelength):
+    r, g, b, a = wavelength_to_rgb(wavelength)
+    return *get_readable_color(r, g, b), a
+
+
 DETAIL = True
 
 CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
@@ -70,59 +84,66 @@ CMAP = ListedColormap([wavelength_to_rgb(x) for x in range(380, 751)])
 if __name__ == '__main__':
     data = {
         'lungs cancer': [
-            # ['wang2020fluorescence', [(500, '-', 570, 'BAC2'),
+            # ['Wang et alfluorescence', [(500, '-', 570, 'BAC2'),
             #                           (610, '-', 730, 'BAC3')]],
-            ['wang2020', [(500, '-', 570, 'BAC2'),
-                              (610, '-', 730, 'BAC3')]],
-            ['wang2021', [(500, '-', 570, 'BAC2'),
-                                      (610, '-', 730, 'BAC3')]],
+            ['Wang et al (2020)', [(500, '-', 570, ''),
+                                   (610, '-', 730, '')]],
+            ['Wang et al (2021)', [(500, '-', 570, ''),
+                                   (610, '-', 730, '')]],
         ],
         #  breast cancer
         'breast cancer': [
-            ['bianchetti2021', [(425, '-', 475, 'NAD(P)H'),
-                                (520, '-', 580, 'FAD')]],
-            ['unger2020', [(390, '/', 40, 'Collagen'), (470, '/', 28, 'NADH'),
-                           (542, '/', 28, 'FAD'),
-                           (629, '/', 53, 'Porphyrin')]],
-            ['phipps2017', [(390, '/', 40, '?'), (466, '/', 40, '?'),
-                            (542, '/', 50, '?'), (629, '/', 53, '?')]]
+            ['Bianchetti et al', [(425, '-', 475, 'NAD(P)H'),
+                                  (520, '-', 580, 'FAD')]],
+            ['Unger et al', [(390, '/', 40, 'Collagen'),
+                             (470, '/', 28, 'NADH'),
+                             (542, '/', 28, 'FAD'),
+                             (629, '/', 53, 'Porphyrin')]],
+            ['Phipps et al', [(390, '/', 40, '?'), (466, '/', 40, '?'),
+                              (542, '/', 50, '?'), (629, '/', 53, '?')]]
         ],
         #  oral cancer
         'oral cancer': [
-            ['marsden2020', [(390, '±', 20, 'Collagen'),
-                             (470, '±', 14, 'NADH'), (542, '±', 25, 'FAD')]],
-            ['jo2018', [(390, '±', 20, 'Collagen'), (452, '±', 22.5, 'NADH'),
-                        (500, '>', 0, 'FAD')]],
-            ['duran2021', [(390, '±', 20, 'Collagen'), (452, '±', 22, 'NADH'),
-                           (500, '>', 0, 'FAD')]],
+            ['Marsden et al (2020)', [(390, '±', 20, 'Collagen'),
+                                      (470, '±', 14, 'NADH'),
+                                      (542, '±', 25, 'FAD')]],
+            ['Jo et al', [(390, '±', 20, 'Collagen'), (452, '±', 22.5, 'NADH'),
+                          (500, '>', 0, 'FAD')]],
+            ['Duran et al', [(390, '±', 20, 'Collagen'),
+                             (452, '±', 22, 'NADH'),
+                             (500, '>', 0, 'FAD')]],
         ],
         #  cervical cancer
         'cervical cancer': [
-            ['sahoo2018', [(400, '>', 0, '?')]],
-            ['gu2014', [(400, '-', 680, '?')]]
+            ['Sahoo et al', [(400, '>', 0, '?')]],
+            ['Gu et al', [(400, '-', 680, '?')]]
         ],
         'skin cancer': [
-            ['cosci2016', [(420, '±', 20, 'NADH'), (514, '±', 15, 'FAD')]],
-            ['romano2020', [(390, '±', 20, 'Collagen'), (452, '±', 22, 'NADH'),
-                           (496, '>', 0, 'FAD')]],
+            ['Cosci et al', [(440, '±', 20, 'NADH'), (514, '±', 15, 'FAD')]],
+            ['Romano et al', [(390, '±', 20, 'Collagen'),
+                              (452, '±', 22, 'NADH'),
+                              (496, '>', 0, 'FAD')]],
         ],
         'brain cancer': [
-            ['butte2011', [(360, '-', 550, '?')]]
+            ['Butte et al', [(360, '-', 550, '?')]]
         ],
         'oropharyngeal cancer': [
-            ['weyers', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
+            ['Weyers', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
                         (542, '±', 25, 'FAD'), (629, '±', 26.5, 'Porphyrin')]]
         ],
         #  cell
         'cell': [
-            ['neto2022', [(458, '/', 64, 'NAD(P)H'), (520, '/', 35, 'FAD')]],
-            ['walsh2021', [(440, '/', 80, 'NAD(P)H'), (550, '/', 100, 'FAD')]],
-            ['qian2021', [(440, '/', 80, 'NAD(P)H'), (550, '/', 100, 'FAD')]],
+            ['Neto et al', [(458, '/', 64, 'NAD(P)H'), (520, '/', 35, 'FAD')]],
+            ['Walsh et al', [(440, '/', 80, 'NAD(P)H'),
+                             (550, '/', 100, 'FAD')]],
+            ['Qian et al', [(440, '/', 80, 'NAD(P)H'),
+                            (550, '/', 100, 'FAD')]],
         ],
         #  paprathyroid
         'parathyroid': [
-            ['marsden2021', [(390, '±', 20, 'Collagen'),
-                             (470, '±', 14, 'NADH'), (542, '±', 25, 'FAD')]]
+            ['Marsden et al (2021)', [(390, '±', 20, 'Collagen'),
+                                      (470, '±', 14, 'NADH'),
+                                      (542, '±', 25, 'FAD')]]
         ],
     }
     total_len = sum([len(data[i]) for i in data])
@@ -163,11 +184,14 @@ if __name__ == '__main__':
                             ha='center', zorder=2)
                 if DETAIL:
                     ax.scatter(x, y+1,
-                               color='black', marker='|', alpha=0.8, zorder=2)
+                               color=get_readable_color_wavelength(x),
+                               marker='|', alpha=0.8, zorder=2)
                     ax.annotate(detail, (x, y+0.3), fontsize=14,
-                                ha='center', zorder=2)
+                                ha='center', zorder=2,
+                                color=get_readable_color_wavelength(x))
                     ax.annotate(wave[3], (x, y+1.4), fontsize=13,
-                                ha='center', weight='bold', zorder=2)
+                                ha='center', weight='bold', zorder=2,
+                                color=get_readable_color_wavelength(x))
 
             count += 1
         # color
@@ -176,34 +200,35 @@ if __name__ == '__main__':
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         ax.imshow([[i]],
-                  extent=(760, 860, ((count-1-j)*2), y+1.9),
+                  extent=(760, 840, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(300, 860)
+    ax.set_xlim(300, 840)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
-    #ax.set_yticks([i*2+1 for i in range(total_len)])
-    #ax.set_yticklabels([j[0] for i in data for j in data[i]])
+    # ax.set_yticks([i*2+1 for i in range(total_len)])
+    # ax.set_yticklabels([j[0] for i in data for j in data[i]])
     d_len = np.array([len(data[i]) for i in data])
     ticks = (np.cumsum(d_len) - d_len/2)*2
-    ### right axis
+    # ## right axis
     # ax2 = ax.twinx()
     # ax2.set_yticks(ticks)
     # ax2.set_yticklabels(data.keys())
     # ax2.set_ylim(0, total_len*2)
-    ### right annotate
+    # ## right annotate
     for i, k in enumerate(data):
-        ax.annotate(k, (810, ticks[i]-0.3), fontsize=16,
+        ax.annotate(k, (800, ticks[i]-0.3), fontsize=16,
                     ha='center', zorder=2)
-    ### legend
+    # ## legend
     # patches = [mpatches.Patch(color=plt.get_cmap('Paired')(i/len(data)),
     #                           label=k)
     #            for i, k in enumerate(data)]
     # patches.reverse()
-    #ax.legend(handles=patches)
-    ### columns
-    columns = [(370, 410), (400, 490), (496, 600, 540), (602.5, 750), (602.5, 655.5)]
+    # ax.legend(handles=patches)
+    # ## columns
+    columns = [(370, 410), (400, 490), (496, 600, 540), (602.5, 750),
+               (602.5, 655.5)]
     for c in columns:
         if len(c) == 3:
             color = c[2]
