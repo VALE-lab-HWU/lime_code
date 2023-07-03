@@ -99,8 +99,8 @@ if __name__ == '__main__':
                              (470, '/', 28, 'NADH'),
                              (542, '/', 28, 'FAD'),
                              (629, '/', 53, 'Porphyrin')]],
-            ['Phipps et al', [(390, '/', 40, '?'), (466, '/', 40, '?'),
-                              (542, '/', 50, '?'), (629, '/', 53, '?')]]
+            ['Phipps et al', [(390, '/', 40, 'unknown'), (466, '/', 40, 'unknown'),
+                              (542, '/', 50, 'unknown'), (629, '/', 53, 'unknown')]]
         ],
         #  oral cancer
         'oral cancer': [
@@ -115,17 +115,21 @@ if __name__ == '__main__':
         ],
         #  cervical cancer
         'cervical cancer': [
-            ['Sahoo et al', [(400, '>', 0, '?')]],
-            ['Gu et al', [(400, '-', 680, '?')]]
+            ['Ji et al', [(447, '±', 30, 'NAD(P)H')]],
+            ['Sahoo et al', [(400, '>', 0, 'unknown')]],
+            ['Gu et al', [(400, '-', 680, 'unknown')]]
         ],
         'skin cancer': [
             ['Cosci et al', [(440, '±', 20, 'NADH'), (514, '±', 15, 'FAD')]],
             ['Romano et al', [(390, '±', 20, 'Collagen'),
                               (452, '±', 22, 'NADH'),
                               (496, '>', 0, 'FAD')]],
+            ['Vasanthakumari et al', [(390, '±', 20, 'Collagen'),
+                              (452, '±', 22.5, 'NADH'),
+                              (496, '>', 0, 'FAD')]]
         ],
         'brain cancer': [
-            ['Butte et al', [(360, '-', 550, '?')]]
+            ['Butte et al', [(360, '-', 550, 'unknown')]]
         ],
         'oropharyngeal cancer': [
             ['Weyers', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
@@ -133,6 +137,7 @@ if __name__ == '__main__':
         ],
         #  cell
         'cell': [
+            ['Kröger et al', [(375, '_', 385, '1'), (401, '-', 690, 'NAD(P)H')]],
             ['Neto et al', [(458, '/', 64, 'NAD(P)H'), (520, '/', 35, 'FAD')]],
             ['Walsh et al', [(440, '/', 80, 'NAD(P)H'),
                              (550, '/', 100, 'FAD')]],
@@ -146,6 +151,8 @@ if __name__ == '__main__':
                                       (542, '±', 25, 'FAD')]]
         ],
     }
+
+
     total_len = sum([len(data[i]) for i in data])
     # help from https://matplotlib.org/stable/gallery/lines_bars_and_markers/broken_barh.html
     fig, ax = plt.subplots()
@@ -160,6 +167,12 @@ if __name__ == '__main__':
                     x = (xs[0]+xs[1])/2
                     color = x
                     detail = f'({wave[0]}-{wave[2]})'
+                elif wave[1] == '_':
+                    xs = (wave[0], wave[2])
+                    x = (xs[0]+xs[1])/2
+                    color = x
+                    detail = f''
+
                 elif wave[1] == '/':
                     x = wave[0]
                     xs = (x-wave[2]/2, x+wave[2]/2)
@@ -183,13 +196,13 @@ if __name__ == '__main__':
                 ax.annotate(v[j][0], (330, y+0.8), fontsize=14,
                             ha='center', zorder=2)
                 if DETAIL:
-                    ax.scatter(x, y+1,
-                               color=get_readable_color_wavelength(x),
-                               marker='|', alpha=0.8, zorder=2)
+                    # ax.scatter(x, y+1,
+                    #            color=get_readable_color_wavelength(x),
+                    #            marker='|', alpha=0.8, zorder=2)
                     ax.annotate(detail, (x, y+0.3), fontsize=14,
                                 ha='center', zorder=2,
                                 color=get_readable_color_wavelength(x))
-                    ax.annotate(wave[3], (x, y+1.4), fontsize=13,
+                    ax.annotate(wave[3], (x, y+1.2), fontsize=13,
                                 ha='center', weight='bold', zorder=2,
                                 color=get_readable_color_wavelength(x))
 
