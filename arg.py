@@ -63,7 +63,7 @@ def parse_2():
                       help='what type of auc', default='sp',
                       choices=['sp', 'ms'])
     argp.add_argument('-shu', dest='shuffle', action='store_true')
-    argp.add_argument('-no-shu', dest='shu', action='store_false')
+    argp.add_argument('-no-shu', dest='shuffle', action='store_false')
     argp.set_defaults(shuffle=False)
     argp.add_argument('-gu', dest='guesses', action='store_true')
     argp.add_argument('-no-gu', dest='guesses', action='store_false')
@@ -71,4 +71,7 @@ def parse_2():
     argp.add_argument('-svm', dest='svm', action='store_true')
     argp.add_argument('-no-svm', dest='svm', action='store_false')
     argp.set_defaults(svm=False)
+    argp.add_argument('-cd', dest='cleaned_d', action='store_true')
+    argp.add_argument('-no-cd', dest='cleaned_d', action='store_false')
+    argp.set_defaults(cleaned_d=False)
     return argp.parse_args()

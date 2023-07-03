@@ -102,29 +102,30 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
         'mlp': {
             'model': mh.build_mlp_model,
             'kwargs': {
-                'alpha': 1,
+                'alpha': 0.001,
                 'hidden_layer_sizes':
-                (256, 64),
+                (128, 64),
                 'max_iter': 1500
             }
         },
         'rf': {
             'model': mh.build_random_forest_model,
             'kwargs': {
-                'max_features': 0.1
+                'max_features': 0.1,
+                'n_estimators': 500,
             }
         },
         'knn': {
             'model': mh.build_knn_model,
             'kwargs': {
-                'n_neighbors': 20
+                'n_neighbors': 1
             }
         },
         'svm': {
             'model': mh.build_svc_model,
             'kwargs': {
-                'C': 10,
-                'gamma': 0.01,
+                'C': 100,
+                'gamma': 0.001,
                 'probability': False
             }
         }
