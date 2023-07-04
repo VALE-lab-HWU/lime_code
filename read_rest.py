@@ -41,18 +41,18 @@ def setup_dt():
     return fn_dict, data
 
 
+def load_model(arg, path='grid'):
+    model = dh.read_data_pickle('robo/'+path+'/output_' + arg + '.pkl')
+    X, y, p = model['X'], model['y'], model['p']
+    return model, X, y, p
+
+
 def setup_md(arg, fn_dict, data, path='grid'):
     model, X, y, p = load_model(arg, path)
     X2, y2, p2 = fn_dict[arg](data[2], data[3])
     y3, y4 = y2[p2 == '20190227'], y2[p2 != '20190227']
     unique_l = np.unique(y)[::-1]
     return model, [X, y, p], [X2, y2, p2], [y3, y4], unique_l
-
-
-def load_model(arg, path='grid'):
-    model = dh.read_data_pickle('robo/'+path+'/output_' + arg + '.pkl')
-    X, y, p = model['X'], model['y'], model['p']
-    return model, X, y, p
 
 
 def exec_on_model(arg, data, fn_dict, fn_init, fn_exec, res_dt,
@@ -375,21 +375,40 @@ def main_read_2_all(args):
         fig.savefig('robo/best_out/graph/patient/patient'+str(i)+'.png')
 
 
+def main_2_print_fn(data, metric):
+    res = {}
+    total = 0
+    for i in range(len(data)):
+        d = data[i]
+        print(f'\nPatient {i} ({len(d[1])})')
+        total += len(d[1])
+        for mdl in d[0]:
+            tmp = np.argmax(d[0][mdl], axis=1)
+            matrix = metrics.confusion_matrix(d[1], tmp,
+                                              labels=[1, 0])
+            score = mlh.get_score_verbose_2(tmp, d[1], matrix)
+            print_color_res(mdl+' '+metric, score[metric])
+            if mdl not in res:
+                res[mdl] = []
+            res[mdl].append(score[metric]*len(d[1]))
+    print('\n-----------')
+    for i in res:
+        print(i, sum(res[i])/total)
+    print('-----------')
+
+
 def main_2_print(arg):
     try:
         metric = args.metric
     except NameError:
         metric = 'acc'
     s = arg.file
-    data = dh.read_data_pickle('robo/best_out/output_'+s+'.pkl')
-    for i in range(len(data)):
-        print('\nPatient', i)
-        d = data[i]
-        for mdl in d[0]:
-            matrix = metrics.confusion_matrix(d[1], d[0][mdl],
-                                              labels=[1, 0])
-            score = mlh.get_score_verbose_2(d[0][mdl], d[1], matrix)
-            print_color_res(mdl+' '+metric, score[metric])
+    data = dh.read_data_pickle(arg.path+s+'.pkl')
+    if len(data) != 11:
+        for d in data:
+            main_2_print_fn(d, metric)
+    else:
+        main_2_print_fn(data, metric)
 
 
 if __name__ == '__main__':

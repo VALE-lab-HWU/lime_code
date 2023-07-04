@@ -17,6 +17,12 @@ def parse_args_read():
     argp.add_argument('-i', dest='input', type=str,
                       help="input info = what to do, or files, it's confusing",
                       default='it')
+    argp.add_argument('-f', dest='file', type=str,
+                      help="file info = what to do, or files, it's confusing",
+                      default='it')
+    argp.add_argument('--path', dest='path', type=str,
+                      help="path info",
+                      default='robo/best_out/output_')
     argp.add_argument('-p', dest='prefix', type=str,
                       help='the prefix for the file to use for graph',
                       default='mrsk')
