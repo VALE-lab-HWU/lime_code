@@ -383,7 +383,10 @@ def main_2_print_fn(data, metric):
         print(f'\nPatient {i} ({len(d[1])})')
         total += len(d[1])
         for mdl in d[0]:
-            tmp = np.argmax(d[0][mdl], axis=1)
+            if len(d[0][mdl].shape) == 2:
+                tmp = np.argmax(d[0][mdl], axis=1)
+            else:
+                tmp = d[0][mdl]
             matrix = metrics.confusion_matrix(d[1], tmp,
                                               labels=[1, 0])
             score = mlh.get_score_verbose_2(tmp, d[1], matrix)
