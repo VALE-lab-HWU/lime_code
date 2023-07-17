@@ -414,6 +414,34 @@ def main_2_print(arg):
         main_2_print_fn(data, metric)
 
 
+def main_2_matrix_fn(data):
+    res = {}
+    total = 0
+    for i in range(len(data)):
+        d = data[i]
+        print(f'\nPatient {i} ({len(d[1])})')
+        total += len(d[1])
+        for mdl in d[0]:
+            print(mdl)
+            if len(d[0][mdl].shape) == 2:
+                tmp = np.argmax(d[0][mdl], axis=1)
+            else:
+                tmp = d[0][mdl]
+            mlh.compare_class(tmp, d[1], verbose=2, unique_l=[1, 0])
+            if mdl not in res:
+                res[mdl] = []
+
+
+def main_2_matrix(arg):
+    s = arg.file
+    data = dh.read_data_pickle(arg.path+s+'.pkl')
+    if len(data) != 11:
+        for d in data:
+            main_2_matrix_fn(d)
+    else:
+        main_2_matrix_fn(data)
+
+
 if __name__ == '__main__':
     args = parse_args_read()
     if args.input == 'all':
@@ -429,6 +457,8 @@ if __name__ == '__main__':
         main_best(args.input)
     elif args.input == 'print':
         main_2_print(args)
+    elif args.input == 'matrix':
+        main_2_matrix(args)
     elif args.input == 'ens':
         # run ensmble model on data test
         # save result for combination models
