@@ -29,10 +29,14 @@ def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
     X, y, p = paper_test.get_set_it(b1, b2)
     x1, x2, y1, y2 = train_test_split(X, y, test_size=0.3, shuffle=True,
                                       random_state=42)
+    pca = mlh.PCA(n_components=0.95, svd_solver='full', random_state=42)
+    px1 = pca.fit_transform(x1)
+    px2 = pca.transform(x2)
     knn = KNeighborsClassifier(n_neighbors=1)
-    knn.fit(x1, y1)
-    out = knn.predict(x2)
-    save_pkl({'x2': x2, 'y2': y2, 'out': out}, fname='./out_knn.pkl')
+    knn.fit(px1, y1)
+    out = knn.predict(px2)
+    save_pkl({'x2': x2, 'px2': px2, 'y2': y2, 'out': out},
+             fname='./out_knn.pkl')
     mlh.compare_class(out, y2, verbose=3, L=12, unique_l=[1, 0])
 
 
