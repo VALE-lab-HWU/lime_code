@@ -224,7 +224,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
              'max_features': [0.1, 0.25, 0.5, 0.75, 0.9]},
             {'C': [0.001, 0.01, 0.1, 1, 10, 100],
              'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
-            {'n_neighbors': np.arange(1, 7)}]
+            {'n_neighbors': [1, 5, 10, 15, 20, 25]}]
     res = cv_all_set(train_b1, train_b2,
                      pipelines, models, args, names, global_args)
     save_pkl(res)

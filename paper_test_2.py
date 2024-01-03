@@ -102,7 +102,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
         'mlp': {
             'model': mh.build_mlp_model,
             'kwargs': {
-                'alpha': 0.001,
+                'alpha': 0.01,
                 'hidden_layer_sizes':
                 (128, 64),
                 'max_iter': 1500
@@ -118,7 +118,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
         'knn': {
             'model': mh.build_knn_model,
             'kwargs': {
-                'n_neighbors': 1
+                'n_neighbors': 1 
             }
         },
         'svm': {
