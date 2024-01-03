@@ -132,7 +132,7 @@ if __name__ == '__main__':
             ['Butte et al', [(360, '-', 550, 'unknown')]]
         ],
         'oropharyngeal cancer': [
-            ['Weyers', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
+            ['Weyers et al', [(390, '±', 20, 'Collagen'), (470, '±', 14, 'NAD(P)H'),
                         (542, '±', 25, 'FAD'), (629, '±', 26.5, 'Porphyrin')]]
         ],
         #  cell
@@ -193,7 +193,7 @@ if __name__ == '__main__':
                 ax.imshow([range(round(xs[0]), round(xs[1]))],
                           extent=(xs[0], xs[1], y, y+1.9), vmin=380, vmax=750,
                           cmap=CMAP, aspect="auto", zorder=1)
-                ax.annotate(v[j][0], (330, y+0.8), fontsize=14,
+                ax.annotate(v[j][0], (322.5, y+0.8), fontsize=14,
                             ha='center', zorder=2)
                 if DETAIL:
                     # ax.scatter(x, y+1,
@@ -209,7 +209,7 @@ if __name__ == '__main__':
             count += 1
         # color
         ax.imshow([[i]],
-                  extent=(300, 360, ((count-1-j)*2), y+1.9),
+                  extent=(290, 355, ((count-1-j)*2), y+1.9),
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         ax.imshow([[i]],
@@ -217,7 +217,7 @@ if __name__ == '__main__':
                   vmin=0, vmax=len(data), aspect='auto', alpha=0.4,
                   cmap=plt.get_cmap('Paired'), zorder=0)
         print(count, j, i)
-    ax.set_xlim(300, 840)
+    ax.set_xlim(290, 840)
     ax.set_ylim(0, total_len*2)
     ax.set_xlabel('nm')
     # ax.set_yticks([i*2+1 for i in range(total_len)])
