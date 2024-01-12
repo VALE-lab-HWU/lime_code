@@ -80,4 +80,7 @@ def parse_2():
     argp.add_argument('-cd', dest='cleaned_d', action='store_true')
     argp.add_argument('-no-cd', dest='cleaned_d', action='store_false')
     argp.set_defaults(cleaned_d=False)
+    argp.add_argument('-dm', dest='dmog', action='store_true')
+    argp.add_argument('-no-dm', dest='dmog', action='store_false')
+    argp.set_defaults(dmog=False)
     return argp.parse_args()
