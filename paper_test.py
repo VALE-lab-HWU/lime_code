@@ -52,6 +52,15 @@ def cv_all_model_on_set(X, y, pipelines, models, args, name, log):
     return res
 
 
+def get_set_it_lf(train_b1, train_b2):
+    Xb1 = np.concatenate((train_b1['it'], train_b1['lf']), axis=1)
+    Xb2 = np.concatenate((train_b2['it'], train_b2['lf']), axis=1)
+    X = np.concatenate((Xb1, Xb2))
+    y = np.concatenate((train_b1['lb'], train_b2['lb']))
+    p = np.concatenate((train_b1['p'], train_b2['p']))
+    return X, y, p
+
+
 # return all lifetime images
 def get_set_lf(train_b1, train_b2):
     X = np.concatenate((train_b1['lf'], train_b2['lf']))
@@ -214,7 +223,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     #              mlh.build_pipeline_pca_model,
     #              mlh.build_pipeline_pca_model]
     pipelines = [mlh.build_pipeline_pca_model]
-    models = [mh.build_svc_model(probability=True)]
+    models = [mh.build_svc_model(probability=False)]
     # models = [mh.build_mlp_model(max_iter=1000),
     #           mh.build_random_forest_model(
     #               n_jobs=-1, max_depth=None, min_samples_split=2),
