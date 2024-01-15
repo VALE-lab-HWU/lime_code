@@ -48,7 +48,7 @@ def run_model_on_set(X, y, p, pipeline, model, args):
            np.array(range(idx[i], idx[i+1]))) for i in range(len(idx)-1)]
     return mh.get_model(X, y, model_fn=pipeline, model=GridSearchCV,
                         model_kwargs={'estimator': model, 'param_grid': args,
-                                      cv: cv})
+                                      'cv': cv})
 
 
 def cv_all_model_on_set(X, y, p, pipelines, models, args, name, log):
