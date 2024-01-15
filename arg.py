@@ -9,6 +9,9 @@ def parse_args():
                       help='the dataset to use')
     argp.add_argument('-l', dest='log', type=str, default='out',
                       help='log file name')
+    argp.add_argument('-m', dest='model', type=str,
+                      choices=['mlp', 'knn', 'svc', 'rf'],
+                      default='svc', help='which model to use')
     return argp.parse_args()
 
 

@@ -37,17 +37,26 @@ def reset_files(args):
         f.write('')
 
 
-def run_model_on_set(X, y, pipeline, model, args):
+# not using sklearn leave one group out
+# cause idk how to give the argument of the splitter, p, to it
+def run_model_on_set(X, y, p, pipeline, model, args):
+    idx = np.unique(p, return_index=True)[1]
+    # ugly one liner. Create a cv, each folds is (train, test), with one
+    # patient as test
+    cv = [(np.concatenate([range(0, idx[i]),
+                           range(idx[i+1], idx[-1])]).astype(int),
+           np.array(range(idx[i], idx[i+1]))) for i in range(len(idx)-1)]
     return mh.get_model(X, y, model_fn=pipeline, model=GridSearchCV,
-                        model_kwargs={'estimator': model, 'param_grid': args})
+                        model_kwargs={'estimator': model, 'param_grid': args,
+                                      cv: cv})
 
 
-def cv_all_model_on_set(X, y, pipelines, models, args, name, log):
+def cv_all_model_on_set(X, y, p, pipelines, models, args, name, log):
     res = {}
     write_log(log, 'start!')
     for i in range(len(pipelines)):
         write_log(log, name[i])
-        model = run_model_on_set(X, y, pipelines[i], models[i], args[i])
+        model = run_model_on_set(X, y, p, pipelines[i], models[i], args[i])
         res[name[i]] = model
     return res
 
@@ -149,15 +158,16 @@ def get_set_it_lf_b1_b2(train_b1, train_b2):
     y = train_b2['lb']
     p = train_b2['p']
     return X, y, p
-    
+
 
 def cv_one_set(
         fn, train_b1, train_b2, pipelines, models, args, names, log):
     X, y, p = fn(train_b1, train_b2)
-    idx = np.random.permutation(len(X))
-    X, y, p = X[idx], y[idx], p[idx]
+    # idx = np.random.permutation(len(X))
+    # X, y, p = X[idx], y[idx], p[idx]
     return {'X': X, 'y': y, 'p': p,
-            **cv_all_model_on_set(X, y, pipelines, models, args, names, log)}
+            **cv_all_model_on_set(X, y, p, pipelines, models,
+                                  args, names, log)}
 
 
 def cv_all_set(
@@ -196,12 +206,12 @@ def get_idx_b1(b):
 def get_test(it, lf, lb, p, b):
     args = locals()
     idxb1 = get_idx_b1(b)
-    train_p, test_p = get_idx_train_test(p[idxb1])
-    stk = StratifiedKFold(10, shuffle=True)
-    train, test_b = list(islice(stk.split(train_p, p[train_p]), 1))[0]
-    test = np.concatenate((test_b, test_p))
-    idxs = [train*2, train*2+1, test*2, test*2+1]
-    return [{i: args[i][j] for i in args} for j in idxs]
+    # train_p, test_p = get_idx_train_test(p[idxb1])
+    # stk = StratifiedKFold(10, shuffle=True)
+    # train, test_b = list(islice(stk.split(train_p, p[train_p]), 1))[0]
+    # test = np.concatenate((test_b, test_p))
+    idxs = [idxb1, idxb1+1]
+    return idxs
 
 
 def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
@@ -209,38 +219,42 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     (it, lf), label, patient, band = dh.get_data_complete(
         path, filename, all_feature=True)
     write_log(global_args.log, 'split test')
-    train_b1, train_b2, test_b1, test_b2 = get_test(
+    train_b1, train_b2 = get_test(
         it, lf, label, patient, band)
     write_log(global_args.log, 'save data')
-    save_pkl([train_b1, train_b2, test_b1, test_b2],
+    save_pkl([train_b1, train_b2],
              global_args.set+'_data.pkl')
     # names = ['mlp', 'rf', 'svc', 'knn']
-    names = ['svc']
+    #
     # it's the same, but it's in case we don't want to do pca
     # or want to run specific process for some models
-    # pipelines = [mlh.build_pipeline_pca_model,
-    #              mlh.build_pipeline_pca_model,
-    #              mlh.build_pipeline_pca_model,
-    #              mlh.build_pipeline_pca_model]
-    pipelines = [mlh.build_pipeline_pca_model]
-    models = [mh.build_svc_model(probability=False)]
-    # models = [mh.build_mlp_model(max_iter=1000),
-    #           mh.build_random_forest_model(
-    #               n_jobs=-1, max_depth=None, min_samples_split=2),
-    #           mh.build_svc_model(probability=True),
-    #           mh.build_knn_model(n_jobs=-1)]
-    # args = [{'alpha': [1, 0.1, 0.001, 0.001, 0.0001],
-    #          'hidden_layer_sizes': [(64, 32), (128, 64),
-    #                                 (256, 64), (32, 16, 8)]},
-    #         {'n_estimators': [100, 500, 1000, 2500, 5000],
-    #          'max_features': [0.1, 0.25, 0.5, 0.75, 0.9]},
-    #         {'C': [0.001, 0.01, 0.1, 1, 10, 100],
-    #          'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
-    #         {'n_neighbors': [1, 5, 10, 15, 20, 25]}]
-    args = [{'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
-             'gamma': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}]
+    pipelines = {'mlp': mlh.build_pipeline_pca_model,
+                 'rf': mlh.build_pipeline_pca_model,
+                 'svc': mlh.build_pipeline_pca_model,
+                 'knn': mlh.build_pipeline_pca_model}
+    # pipelines = [mlh.build_pipeline_pca_model]
+    # models = [mh.build_svc_model(probability=False)]
+    models = {'mlp': mh.build_mlp_model(max_iter=1000),
+              'rf': mh.build_random_forest_model(
+                  n_jobs=-1, max_depth=None, min_samples_split=2),
+              'svc': mh.build_svc_model(probability=False),
+              'knn': mh.build_knn_model(n_jobs=-1)}
+    args = {'mlp': {'alpha': [1, 0.1, 0.001, 0.001, 0.0001],
+                    'hidden_layer_sizes': [(64, 32), (128, 64),
+                                           (256, 64), (32, 16, 8)]},
+            'rf': {'n_estimators': [100, 500, 1000, 2500, 5000],
+                   'max_features': [0.1, 0.25, 0.5, 0.75, 0.9]},
+            'svc': {'C': [0.001, 0.01, 0.1, 1, 10, 100],
+                    'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
+            'knn': {'n_neighbors': [1, 5, 10, 15, 20, 25]}}
+    # args = [{'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+    #          'gamma': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}]
+    name = [global_args.model]
+    pipeline = [pipelines[global_args.model]]
+    model = [models[global_args.model]]
+    arg = [args[global_args.model]]
     res = cv_all_set(train_b1, train_b2,
-                     pipelines, models, args, names, global_args)
+                     pipeline, model, arg, name, global_args)
     save_pkl(res)
 
 
