@@ -211,7 +211,7 @@ def get_test(it, lf, lb, p, b):
     # train, test_b = list(islice(stk.split(train_p, p[train_p]), 1))[0]
     # test = np.concatenate((test_b, test_p))
     idxs = [idxb1, idxb1+1]
-    return idxs
+    return [{i: args[i][j] for i in args} for j in idxs]
 
 
 def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
