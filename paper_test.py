@@ -40,7 +40,7 @@ def reset_files(args):
 # not using sklearn leave one group out
 # cause idk how to give the argument of the splitter, p, to it
 def run_model_on_set(X, y, p, pipeline, model, args):
-    idx = np.unique(p, return_index=True)[1]
+    idx = np.concatenate([np.unique(p, return_index=True)[1], [len(p)]])
     # ugly one liner. Create a cv, each folds is (train, test), with one
     # patient as test
     cv = [(np.concatenate([range(0, idx[i]),
@@ -165,8 +165,7 @@ def cv_one_set(
     X, y, p = fn(train_b1, train_b2)
     # idx = np.random.permutation(len(X))
     # X, y, p = X[idx], y[idx], p[idx]
-    return {'X': X, 'y': y, 'p': p,
-            **cv_all_model_on_set(X, y, p, pipelines, models,
+    return {**cv_all_model_on_set(X, y, p, pipelines, models,
                                   args, names, log)}
 
 
@@ -222,8 +221,8 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     train_b1, train_b2 = get_test(
         it, lf, label, patient, band)
     write_log(global_args.log, 'save data')
-    save_pkl([train_b1, train_b2],
-             global_args.set+'_data.pkl')
+    # save_pkl([train_b1, train_b2],
+    #          global_args.set+'_data.pkl')
     # names = ['mlp', 'rf', 'svc', 'knn']
     #
     # it's the same, but it's in case we don't want to do pca
@@ -255,7 +254,7 @@ def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     arg = [args[global_args.model]]
     res = cv_all_set(train_b1, train_b2,
                      pipeline, model, arg, name, global_args)
-    save_pkl(res)
+    # save_pkl(res)
 
 
 if __name__ == '__main__':
