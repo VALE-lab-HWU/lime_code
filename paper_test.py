@@ -261,4 +261,4 @@ if __name__ == '__main__':
     write_log(args.log, 'Set seed')
     print('Set seed')
     np.random.seed(RANDOM_SEED)
-    #main(args)
+    main(args)
