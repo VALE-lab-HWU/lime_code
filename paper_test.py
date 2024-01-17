@@ -40,12 +40,10 @@ def reset_files(args):
 # not using sklearn leave one group out
 # cause idk how to give the argument of the splitter, p, to it
 def run_model_on_set(X, y, p, pipeline, model, args):
-    idx = np.concatenate([np.unique(p, return_index=True)[1], [len(p)]])
+    idx = np.unique(p)
     # ugly one liner. Create a cv, each folds is (train, test), with one
     # patient as test
-    cv = [(np.concatenate([range(0, idx[i]),
-                           range(idx[i+1], idx[-1])]).astype(int),
-           np.array(range(idx[i], idx[i+1]))) for i in range(len(idx)-1)]
+    cv = [(np.where(p != i)[0], np.where(p == i)[0]) for i in idx]
     return mh.get_model(X, y, model_fn=pipeline, model=GridSearchCV,
                         model_kwargs={'estimator': model, 'param_grid': args,
                                       'cv': cv})
@@ -263,4 +261,4 @@ if __name__ == '__main__':
     write_log(args.log, 'Set seed')
     print('Set seed')
     np.random.seed(RANDOM_SEED)
-    main(args)
+    #main(args)
