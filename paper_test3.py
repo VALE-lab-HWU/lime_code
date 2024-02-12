@@ -1,12 +1,11 @@
+import sys
+
 import numpy as np
-from sklearn.model_selection import GridSearchCV
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score
-from itertools import islice
+from sklearn.ensemble import StackingClassifier, VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from functools import partial
 from arg import parse_args
 
-import data_helper as dh
 import model_helper as mh
 import ml_helper as mlh
 
@@ -26,10 +25,22 @@ def load_pkl(fname='./res.pkl'):
     return res
 
 
+def write_log(flog, msg):
+    with open('./'+flog, 'a') as f:
+        f.write(msg+'\n')
+
+
+def reset_files(args):
+    with open('./'+args.name, 'w+') as f:
+        f.write('')
+    with open('./'+args.log, 'w+') as f:
+        f.write('')
+
+
 def run_on_one_fold(ds, fold, model_fn):
     data = load_pkl(f'pca_{ds}_{fold}.pkl')
     model = model_fn()
-    model.fit(data['train']['X'])
+    model.fit(data['train']['X'], data['train']['y'])
     pred = model.predict(data['test']['X'])
     return pred, data['test']['y']
 
@@ -42,25 +53,41 @@ def run_all_fold(ds, model_fn, fold_nb=11):
         y_pred.append(pr)
         y_true.append(tr)
     return y_pred, y_true
-    
-
-def build_model():
-    pass
 
 
-def main(global_args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
+def build_model(ensemble):
+    estimators = [
+        ('rf',  mh.build_random_forest_model(
+            max_features=0.5, n_estimators=100, n_jobs=-1,
+            max_depth=None, min_samples_split=2)),
+        ('svc', mh.build_svc_model(C=1, gamma=0.001, probability=True)),
+        ('knn', mh.build_knn_model(n_neighbors=1, n_jobs=-1)),
+        ('mlp', mh.build_mlp_model(alpha=1, hidden_layer_sizes=(256, 64),
+                                   max_iter=1000))]
+    if ensemble == 'vote':
+        clf = partial(VotingClassifier, estimators=estimators, voting='soft')
+    elif ensemble == 'stack':
+        clf = partial(StackingClassifier,
+                      estimators=estimators,
+                      final_estimator=LogisticRegression())
+    else:
+        sys.exit()
+    return clf
+
+
+def main(global_args):
     dset = global_args.set
-    model_fn = build_model()
-    metric_fn = get_metric(global_args.metric)
-    y_pred, y_true = run_on_one_fold(dset, model_fn)
-    metric = {}
+    model_fn = build_model(args.ensemble)
+    y_pred, y_true = run_all_fold(dset, model_fn)
     for i in range(len(y_pred)):
-        metric[i] = metric_fn(y_true, y_pred)
+        with open(f'{global_args.ensemble}_{dset}_{i}.txt', 'w') as f:
+            mlh.compare_class(y_pred[i], y_true[i], verbose=2,
+                              f=f, unique_l=[1, 0])
     y_true = [j for i in y_true for j in i]
     y_pred = [j for i in y_pred for j in i]
-    metric['all'] = metric_fn(y_true, y_pred)
-    save_pkl(metric, f'res_{global_args.ensemble}_{dset}.pkl')
-    
+    with open(f'{global_args.ensemble}_{dset}_all.txt', 'w') as f:
+        mlh.compare_class(y_pred, y_true, verbose=3, f=f, unique_l=[1, 0])
+
 
 if __name__ == '__main__':
     args = parse_args()

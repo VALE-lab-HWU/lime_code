@@ -12,6 +12,9 @@ def parse_args():
     argp.add_argument('-m', dest='model', type=str,
                       choices=['mlp', 'knn', 'svc', 'rf'],
                       default='svc', help='which model to use')
+    argp.add_argument('-e', dest='ensemble', type=str,
+                      choices=['vote', 'stack'],
+                      default='vote', help='which ensemble strategy to use')
     return argp.parse_args()
 
 
