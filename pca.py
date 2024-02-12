@@ -43,8 +43,8 @@ def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
         for patient, (train, test) in enumerate(cv):
             n_train = pca.fit_transform(X[train])
             n_test = pca.transform(X[test])
-            res_train = {'X': n_train, 'y': y, 'p': p}
-            res_test = {'X': n_test, 'y': y, 'p': p}
+            res_train = {'X': n_train, 'y': y[train], 'p': p[train]}
+            res_test = {'X': n_test, 'y': y[test], 'p': p[test]}
             pt.save_pkl({'train': res_train, 'test': res_test}, f'pca_{k}_{patient}.pkl')
     
 
