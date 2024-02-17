@@ -38,7 +38,7 @@ def reset_files(args):
 
 
 def run_on_one_fold(ds, fold, model_fn):
-    data = load_pkl(f'pca_{ds}_{fold}.pkl')
+    data = load_pkl(f'pca/pca_{ds}_{fold}.pkl')
     model = model_fn()
     model.fit(data['train']['X'], data['train']['y'])
     pred = model.predict(data['test']['X'])

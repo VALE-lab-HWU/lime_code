@@ -19,8 +19,8 @@ REX = re.compile('\\033\[\d+m')
 # utility function to print a line of a certain length per cell
 # lng will be the number of 'cell'
 # L will be the width of a cell
-def print_line_matrix(lng, L=8):
-    print('-' * ((L+1) * (lng) + 1))
+def print_line_matrix(lng, L=8, f=None):
+    print('-' * ((L+1) * (lng) + 1), file=f)
 
 
 # format a string so it fits in a cell
@@ -56,15 +56,14 @@ def format_row(r, L=8):
 # print a 2d array based on a layout
 # each cell will have L characters
 # can have color code
-def print_matrix(layout, L=8):
-    print_line_matrix(len(layout[0]), L)
+def print_matrix(layout, L=8, f=None):
+    print_line_matrix(len(layout[0]), L, f)
     for i in range(len(layout)):
-        print(format_row(layout[i], L))
+        print(format_row(layout[i], L), file=f)
         len_l = len(layout[i])
         if i + 1 < len(layout):
             len_l = max(len(layout[i+1]), len_l)
-        print_line_matrix(len_l, L)
-
+        print_line_matrix(len_l, L, f)
 
 def dvd(a, b):
     if b == 0 or b == float('inf') or math.isnan(b):
@@ -407,7 +406,8 @@ def append_verbose_0(layout, predicted, label, matrix):
 # verbose: how much measure are to be displayed (0,1,2,3)
 # color: put color in
 # L: cell width
-def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
+def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None,
+                  f=None):
     if unique_l is None:
         unique_l = np.unique(label)[::-1]
     matrix = metrics.confusion_matrix(
@@ -426,7 +426,7 @@ def compare_class(predicted, label, verbose=1, color=True, L=8, unique_l=None):
     layout = clean_layout(layout)
     if color:
         add_color_layout(layout)
-    print_matrix(layout, L)
+    print_matrix(layout, L, f)
 
 
 def compare_per_patient(predicted, label, p_test, i_test,
