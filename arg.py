@@ -15,6 +15,9 @@ def parse_args():
     argp.add_argument('-e', dest='ensemble', type=str,
                       choices=['vote', 'stack'],
                       default='vote', help='which ensemble strategy to use')
+    argp.add_argument('-ss', dest='sets', type=str,
+                      help="the dataset to use, if relevant",
+                      default=['it'], nargs='*')
     return argp.parse_args()
 
 

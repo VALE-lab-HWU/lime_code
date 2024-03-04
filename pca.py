@@ -21,7 +21,7 @@ def get_20_first_patient(it, lf, label, patient, band):
     return it[res], lf[res], label[res], patient[res], band[res]
 
 
-def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
+def main(args, path=dh.PATH_CLEANED, filename=dh.FILENAME):
     (it, lf), label, patient, band = dh.get_data_complete(
         path, filename, all_feature=True)
     # it, lf, label, patient, band = get_20_first_patient(it, lf, label, patient, band)
@@ -35,7 +35,8 @@ def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
                'it_lf_b1': pt.get_set_it_lf_b1,
                'it_lf_b2': pt.get_set_it_lf_b2,
                'it_lf_b1_b2': pt.get_set_it_lf_b1_b2}
-    for k, v in fn_dict.items():
+    for k in args.sets:
+        v = fn_dict[k]
         X, y, p = v(train_b1, train_b2)
         idx = np.unique(p)
         cv = [(np.where(p != i)[0], np.where(p == i)[0]) for i in idx]
@@ -49,4 +50,5 @@ def main(path=dh.PATH_CLEANED, filename=dh.FILENAME):
     
 
 if __name__ == '__main__':
-    main()
+    args = parse_args()
+    main(args)
