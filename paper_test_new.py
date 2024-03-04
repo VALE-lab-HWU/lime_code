@@ -1,7 +1,4 @@
-import sys
-
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import ParameterGrid
 from functools import partial
 from arg import parse_args
@@ -81,21 +78,22 @@ def get_arg_model(model):
 
 
 def main(global_args):
+    seed = global_args.seed
     dset = global_args.set
     model_fn = build_model(args.model)
     args_model = get_arg_model(args.model)
     y_preds, y_trues = run_all_fold(dset, model_fn, args_model)
+    with open(f'{global_args.model}_{dset}_seed_{seed}.pkl', 'w') as f:
+        print(list(enumerate(args_model)), file=f)
     for i in range(len(y_preds)):
         for j in range(len(y_preds[i])):
-            with open(f'{global_args.model}_{i}_{dset}_{j}.txt', 'w') as f:
+            with open(f'{global_args.model}_{i}_{dset}_{j}_seed_{seed}.txt', 'w') as f:
                 mlh.compare_class(y_preds[i][j], y_trues[i][j], verbose=2,
                                   f=f, unique_l=[1, 0])
     y_trues = [[j for i in y_true for j in i] for y_true in y_trues]
     y_preds = [[j for i in y_pred for j in i] for y_pred in y_preds]
-    print('r---')
     for i in range(len(y_preds)):
-        print(np.unique(y_preds[i], return_counts=1), np.unique(y_trues[i], return_counts=1))
-        with open(f'{global_args.model}_{i}_{dset}_all.txt', 'w') as f:
+        with open(f'{global_args.model}_{i}_{dset}_all_seed_{seed}.txt', 'w') as f:
             mlh.compare_class(y_preds[i], y_trues[i], verbose=3,
                               f=f, unique_l=[1, 0])
 
@@ -105,5 +103,5 @@ if __name__ == '__main__':
     reset_files(args)
     write_log(args.log, 'Set seed')
     print('Set seed')
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(args.seed)
     main(args)

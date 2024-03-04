@@ -18,6 +18,8 @@ def parse_args():
     argp.add_argument('-ss', dest='sets', type=str,
                       help="the dataset to use, if relevant",
                       default=['it'], nargs='*')
+    argp.add_argument('-r', dest='seed', type=int,
+                      help='random seed', default=42)
     return argp.parse_args()
 
 
