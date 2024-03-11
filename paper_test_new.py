@@ -60,7 +60,8 @@ def build_model(model):
     models = {'mlp': partial(mh.build_mlp_model, max_iter=1000),
               'rf': partial(mh.build_random_forest_model,
                             n_jobs=-1, max_depth=None, min_samples_split=2),
-              'svc': partial(mh.build_svc_model, probability=False),
+              'svc': partial(mh.build_svc_model, gamma='scale',
+                             probability=False),
               'knn': partial(mh.build_knn_model, n_jobs=-1)}
     return models[model]
 
@@ -69,10 +70,9 @@ def get_arg_model(model):
     args = {'mlp': {'alpha': [1, 0.1, 0.01, 0.001, 0.0001],
                     'hidden_layer_sizes': [(64, 32), (128, 64),
                                            (256, 64), (32, 16, 8)]},
-            'rf': {'n_estimators': [100, 500, 1000, 2500, 5000],
+            'rf': {'n_estimators': [100, 500, 1000, 2500],
                    'max_features': [0.1, 0.25, 0.5, 0.75, 0.9]},
-            'svc': {'C': [0.001, 0.01, 0.1, 1, 10, 100],
-                    'gamma': [0.001, 0.01, 0.1, 1, 10, 100]},
+            'svc': {'C': [0.01, 0.1, 1, 10, 100]},
             'knn': {'n_neighbors': [1, 5, 10, 15, 20, 25]}}
     return ParameterGrid(args[model])
 
