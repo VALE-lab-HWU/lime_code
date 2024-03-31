@@ -60,30 +60,30 @@ def build_model(model):
         'mlp': {
             'model': mh.build_mlp_model,
             'kwargs': {
-                'alpha': 0.01,
+                'alpha': 1,
                 'hidden_layer_sizes':
-                (128, 64),
+                (256, 64),
                 'max_iter': 1500
             }
         },
         'rf': {
             'model': mh.build_random_forest_model,
             'kwargs': {
-                'max_features': 0.1,
+                'max_features': 0.5,
                 'n_estimators': 500,
             }
         },
         'knn': {
             'model': mh.build_knn_model,
             'kwargs': {
-                'n_neighbors': 1
+                'n_neighbors': 20
             }
         },
         'svm': {
             'model': mh.build_svc_model,
             'kwargs': {
-                'C': 100,
-                'gamma': 0.001,
+                'C': 0.1,
+                'gamma': 'scale',
                 'probability': False
             }
         }

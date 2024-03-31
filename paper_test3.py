@@ -58,12 +58,12 @@ def run_all_fold(ds, model_fn, fold_nb=11):
 def build_model(ensemble):
     estimators = [
         ('rf',  mh.build_random_forest_model(
-            max_features=0.5, n_estimators=100, n_jobs=-1,
+            max_features=0.5, n_estimators=500, n_jobs=-1,
             max_depth=None, min_samples_split=2)),
-        ('svc', mh.build_svc_model(C=1, gamma=0.001, probability=True)),
-        ('knn', mh.build_knn_model(n_neighbors=1, n_jobs=-1)),
+        ('svc', mh.build_svc_model(C=0.1, gamma='scale', probability=True)),
+        ('knn', mh.build_knn_model(n_neighbors=20, n_jobs=-1)),
         ('mlp', mh.build_mlp_model(alpha=1, hidden_layer_sizes=(256, 64),
-                                   max_iter=1000))]
+                                   max_iter=1500))]
     if ensemble == 'vote':
         clf = partial(VotingClassifier, estimators=estimators, voting='soft')
     elif ensemble == 'stack':
