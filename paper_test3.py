@@ -94,5 +94,5 @@ if __name__ == '__main__':
     reset_files(args)
     write_log(args.log, 'Set seed')
     print('Set seed')
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(args.seed)
     main(args)
