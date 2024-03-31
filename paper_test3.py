@@ -80,12 +80,12 @@ def main(global_args):
     model_fn = build_model(args.ensemble)
     y_pred, y_true = run_all_fold(dset, model_fn)
     for i in range(len(y_pred)):
-        with open(f'{global_args.ensemble}_{dset}_{i}.txt', 'w') as f:
+        with open(f'{global_args.ensemble}_{dset}_{i}_{global_args.seed}.txt', 'w') as f:
             mlh.compare_class(y_pred[i], y_true[i], verbose=2,
                               f=f, unique_l=[1, 0])
     y_true = [j for i in y_true for j in i]
     y_pred = [j for i in y_pred for j in i]
-    with open(f'{global_args.ensemble}_{dset}_all.txt', 'w') as f:
+    with open(f'{global_args.ensemble}_{dset}_all_{global_args.seed}.txt', 'w') as f:
         mlh.compare_class(y_pred, y_true, verbose=3, f=f, unique_l=[1, 0])
 
 
