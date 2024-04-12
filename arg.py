@@ -20,6 +20,9 @@ def parse_args():
                       default=['it'], nargs='*')
     argp.add_argument('-r', dest='seed', type=int,
                       help='random seed', default=42)
+    argp.add_argument('-y', dest='original',
+                      help='originnal dataset', action='store_true')
+    argp.set_defaults(original=False)
     return argp.parse_args()
 
 

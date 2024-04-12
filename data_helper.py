@@ -7,11 +7,11 @@ PATH = '../data/processed'
 FILENAME = 'cleaned_all_patient.pickle'
 
 PATH_CLEANED = PATH + '/cleaned'
-FILE_PREFIX = 'band_cleaned_'
-FILE_SUFFIX = '_all_patient.pickle'
+FILE_PREFIX = 'band_cleaned'
+FILE_SUFFIX = 'all_patient.pickle'
 FILEMAIN = 'MDCEBL'
 
-FILENAME = FILE_PREFIX + FILEMAIN + FILE_SUFFIX
+FILENAME = FILE_PREFIX + '_' + FILEMAIN + '_' + FILE_SUFFIX
 
 
 # read the data in the file located at the filepath
